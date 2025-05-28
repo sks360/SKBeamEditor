@@ -1,0 +1,83 @@
+﻿<Project DefaultTargets="ApplyCodeBaseToAppConfigFiles" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="CodeBaseAppConfigPatcherTask" AssemblyFile="TSAppConfigPatcherTask.dll" />
+  <Target Name="PatchCodeBaseToAppConfigFiles"
+          Condition="'$(DisablePatchCodeBaseToAppConfigFiles)' != 'true' And ($(TargetPath.EndsWith('.exe')) Or '$(OutputType)' == 'Exe' Or $(TargetPath.EndsWith('Tests.dll')) or $(TargetPath.EndsWith('Test.dll')) or '$(ForceApplyAppConfig)' == 'true')" >
+
+    <ItemGroup>
+      <!-- TS Gac Dlls -->
+      <GacDlls Include="@(UserDefinedGacDlls);DotNetKit.dll;
+                      Tekla.Logging.dll;                      
+                      Tekla.Application.Library.dll;
+                      Tekla.Structures.WebBrowser.dll;
+                      Tekla.Structures.WorkspaceApiConnector.dll;
+                      Tekla.Structures.dll;
+                      Tekla.Structures.Datatype.dll;
+                      Tekla.Structures.Dialog.dll;
+                      Tekla.Structures.Drawing.dll;
+                      Tekla.Structures.Model.dll;
+                      Tekla.Structures.Plugins.dll;
+                      Tekla.Structures.Analysis.dll;
+                      Tekla.Structures.Catalogs.dll;
+                      Tekla.Structures.Ui.WpfKit.dll;
+                      Tekla.Structures.CustomPropertyPlugin.dll;
+                      Tekla.BIM.Geometry.dll;
+                      Model.Common.dll;
+                      Tekla.BIM.Common.Contracts.dll;
+                      Tekla.BIM.Utilities.dll;
+                      Tekla.BIM.DirectManipulation.dll;
+                      Tekla.Structures.Geometry3d.Compatibility.dll;
+                      Tekla.Structures.DrawingPresentationPluginInterface.dll;
+                      Tekla.Structures.DrawingPresentationModel.dll;
+                      Tekla.Structures.ObjectDimensioningPlugin.dll;
+                      Tekla.Structures.ObjectDimensioningModel.dll;
+                      Tekla.Structures.Dialog.Data.dll;
+                      Tekla.Structures.DirectManipulation.dll;"/>
+
+      <!-- Tech and System External Gac Dlls -->
+      <!-- If having troubles finding versions and tokens, install IlSpy and retrive those using it -->
+      <GacDlls Include="Akit5.dll;
+                      Tekla.Technology.Scripting.dll;
+                      Trimble.Technology.Rkit.dll;
+                      Trimble.Technology.MsgLib.dll;
+                      Tekla.Technology.Serialization.dll;
+                      Tekla.Common.Geometry.Primitives.dll;
+                      Tekla.Common.Geometry.dll;
+                      Tekla.Common.Geometry.Shapes.dll;
+                      Trimble.Remoting.dll;
+                      Trimble.Package.Manager.dll;
+                      Tekla.Technology.Scripting.Plugins.dll;
+                      System.Runtime.CompilerServices.Unsafe.dll;
+                      Grpc.Core.Api.dll;
+                      Grpc.Core.dll;
+                      Grpc.Net.Client.dll;
+                      Grpc.Net.Common.dll;
+                      Google.Protobuf.dll;"/>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <!-- Force build process to use the transformed configuration file from now on. -->
+      <AppConfig Condition="'$(SourceAppConfigExe)' != '' or '$(TeklaStructuresInstallationPath)' != '' or '$(TeklaVersion)' != ''">$(IntermediateOutputPath)App.config</AppConfig>
+      <AppConfigOverwriteFile Condition="'$(AppConfigOverwriteFile)' == ''"></AppConfigOverwriteFile>
+      <ApplyGacCodeBases Condition="'$(ApplyGacCodeBases)' == ''">true</ApplyGacCodeBases>
+    </PropertyGroup>
+
+    <Message Text="Configuration = $(Configuration)" Importance="High" />
+    <Message Text="TeklaStructuresInstallationPath = $(TeklaStructuresInstallationPath)" Importance="High" />
+    <Message Text="TeklaVersion = $(TeklaVersion)" Importance="High" />
+
+    <CodeBaseAppConfigPatcherTask Condition="'$(SourceAppConfigExe)' != '' or '$(TeklaStructuresInstallationPath)' != '' or '$(TeklaVersion)' != ''"
+                AppConfigFileToWrite="$(IntermediateOutputPath)App.config"
+                AppConfigWorkLocation="$(IntermediateOutputPath)"
+                ProjectFilePath="$(MSBuildProjectDirectory)"
+                SourceAppConfigExe="$(SourceAppConfigExe)"
+                ApplyGacCodeBases="$(ApplyGacCodeBases)"
+                DebugTsAppConfigTask="$(DebugTsAppConfigTask)"
+                GacDllsToPatch="@(GacDlls)"
+                TeklaVersion="$(TeklaVersion)"
+                TeklaStructuresInstallationPath="$(TeklaStructuresInstallationPath)"
+                AppConfigOverwriteFile="$(AppConfigOverwriteFile)" />
+  </Target>
+
+  <Target Name="ApplyCodeBaseToAppConfigFiles" BeforeTargets="PrepareForBuild" DependsOnTargets="PatchCodeBaseToAppConfigFiles" >
+  </Target>
+</Project>
