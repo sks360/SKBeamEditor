@@ -22,6 +22,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 {
     public class GussetDimension
     {
+        private readonly CustomInputModel _userInput;
+
         private string client;
 
         private FontSizeSelector fontSize;
@@ -41,16 +43,15 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
         public GussetDimension(SKCatalogHandler catalogHandler, 
             BoltMatrixHandler boltMatrixHandler, BoundingBoxHandler boundingBoxHandler,
-            SKSortingHandler sortingHandler,
-            string client,
-            FontSizeSelector fontSize)
+            SKSortingHandler sortingHandler,CustomInputModel userInput)
         {
             this.catalogHandler = catalogHandler;
             this.boltMatrixHandler = boltMatrixHandler;
             this.boundingBoxHandler = boundingBoxHandler;
             this.sortingHandler = sortingHandler;
-            this.client = client;
-            this.fontSize = fontSize;
+            _userInput = userInput;
+            this.client = userInput.Client;
+            this.fontSize = userInput.FontSize;
         }
 
         public void GussetDimensionsWithBolts(

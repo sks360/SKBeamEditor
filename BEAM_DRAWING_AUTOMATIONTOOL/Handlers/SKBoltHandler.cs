@@ -29,6 +29,8 @@ namespace SK.Tekla.Drawing.Automation.Handlers
 {
     public class SKBoltHandler
     {
+        private readonly CustomInputModel _userInput;
+
         private string client; //client
 
         private FontSizeSelector fontSize;
@@ -37,13 +39,13 @@ namespace SK.Tekla.Drawing.Automation.Handlers
 
         private readonly BoltMatrixHandler boltMatrixHandler;
 
-        public SKBoltHandler(SKCatalogHandler catalogHandler, BoltMatrixHandler boltMatrixHandler, string client,
-            FontSizeSelector fontSize)
+        public SKBoltHandler(SKCatalogHandler catalogHandler, BoltMatrixHandler boltMatrixHandler, CustomInputModel userInput)
         {
             this.catalogHandler = catalogHandler;
             this.boltMatrixHandler = boltMatrixHandler;
-            this.client = client;
-            this.fontSize = fontSize;
+            _userInput = userInput;
+            this.client = userInput.Client;
+            this.fontSize = userInput.FontSize;
         }
 
         public void ANGLE_BOLT_DIM(TSD.PointList FINAL_list3x3_positive, TSD.PointList FINAL_list3x3_negative, 

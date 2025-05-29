@@ -24,6 +24,7 @@ namespace SK.Tekla.Drawing.Automation.Handlers
 {
     public class SKSlopHandler
     {
+        private readonly CustomInputModel _userInput;
 
         private string client; //client
 
@@ -31,12 +32,12 @@ namespace SK.Tekla.Drawing.Automation.Handlers
 
         private readonly SKSortingHandler sortingHandler;
 
-        public SKSlopHandler(SKSortingHandler sortingHandler, string client,
-            FontSizeSelector fontSize)
+        public SKSlopHandler(SKSortingHandler sortingHandler, CustomInputModel userInput)
         {
             this.sortingHandler = sortingHandler;
-            this.client = client;
-            this.fontSize = fontSize;
+            _userInput = userInput;
+            this.client = userInput.Client;
+            this.fontSize = userInput.FontSize;
         }
 
         public TSG.Vector VectorForSlope(TSM.BoltGroup boltGroup, TSD.View currentView)

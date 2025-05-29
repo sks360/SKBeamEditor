@@ -21,33 +21,24 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 {
     public class ElevationDimension
     {
+
+        private readonly CustomInputModel _userInput;
         private string client;
 
         private FontSizeSelector fontSize;
 
-        private readonly SKCatalogHandler catalogHandler;
+        private readonly bool isElevationDim; 
 
-        private readonly BoltMatrixHandler boltMatrixHandler;
-
-        private readonly BoundingBoxHandler boundingBoxHandler;
-
-        private readonly SKSortingHandler sortingHandler;
-
-        private readonly bool isElevationDim; //chkwptxteledim.Checked
-
-        public ElevationDimension(SKCatalogHandler catalogHandler, 
-            BoltMatrixHandler boltMatrixHandler, BoundingBoxHandler boundingBoxHandler,
-            SKSortingHandler sortingHandler,
-            string client,
-            FontSizeSelector fontSize, bool isElevationDim)
+        /// <summary>
+        /// Creates Elevation Dimension
+        /// </summary>
+        /// <param name="userInput"></param>
+        public ElevationDimension(CustomInputModel userInput) 
         {
-            this.catalogHandler = catalogHandler;
-            this.boltMatrixHandler = boltMatrixHandler;
-            this.boundingBoxHandler = boundingBoxHandler;
-            this.sortingHandler = sortingHandler;
-            this.client = client;
-            this.fontSize = fontSize;
-            this.isElevationDim = isElevationDim;
+            this.client = userInput.Client;
+            this.fontSize = userInput.FontSize;
+            this.isElevationDim = userInput.NeedEleDimension;
+            _userInput = userInput;
         }
 
 

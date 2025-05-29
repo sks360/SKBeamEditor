@@ -25,6 +25,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing
 {
     public class BoltMarkDetailing
     {
+        private readonly CustomInputModel _userInput;
 
         private string client; //client
 
@@ -32,12 +33,12 @@ namespace SK.Tekla.Drawing.Automation.Drawing
 
         private readonly SKCatalogHandler catalogHandler;
 
-        public BoltMarkDetailing(SKCatalogHandler catalogHandler, string client,
-            FontSizeSelector fontSize)
+        public BoltMarkDetailing(SKCatalogHandler catalogHandler,  CustomInputModel userInput)
         {
             this.catalogHandler = catalogHandler;
-            this.client = client;
-            this.fontSize = fontSize;
+            _userInput = userInput;
+            this.client = userInput.Client;
+            this.fontSize = userInput.FontSize;
         }
 
 

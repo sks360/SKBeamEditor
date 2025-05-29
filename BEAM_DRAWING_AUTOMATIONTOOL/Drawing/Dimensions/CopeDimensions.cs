@@ -20,6 +20,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 {
     public class CopeDimensions
     {
+        private readonly CustomInputModel _userInput;
+
         private readonly string client;
         private readonly FontSizeSelector fontSize;
         private readonly SKCatalogHandler catalogHandler;
@@ -29,11 +31,12 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
         private const double CutDimDistance = 40;
         private const double Tolerance = 1e-6;
 
-        public CopeDimensions(SKCatalogHandler catalogHandler, string client, FontSizeSelector fontSize)
+        public CopeDimensions(SKCatalogHandler catalogHandler,  CustomInputModel userInput)
         {
             this.catalogHandler = catalogHandler ?? throw new ArgumentNullException(nameof(catalogHandler));
-            this.client = client ?? throw new ArgumentNullException(nameof(client));
-            this.fontSize = fontSize;
+            _userInput = userInput;
+            this.client = userInput.Client;
+            this.fontSize = userInput.FontSize;
         }
 
         public void CreateCopeDimensions(TSD.View currentView, TSM.Beam mainPart, string drawingAttributes)

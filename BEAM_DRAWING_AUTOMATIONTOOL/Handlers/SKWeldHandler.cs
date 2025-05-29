@@ -10,18 +10,31 @@ using SK.Tekla.Drawing.Automation.Utils;
 using Tekla.Structures.Model.Operations;
 using Tekla.Structures.ObjectPropertiesLibrary;
 using System.Collections;
+using SK.Tekla.Drawing.Automation.Models;
 
 namespace SK.Tekla.Drawing.Automation.Handlers
 {
+    /// <summary>
+    /// Handles welding
+    /// </summary>
     public class SKWeldHandler
     {
+        private readonly CustomInputModel _userInput;
+
         private readonly string _client;
 
-        public SKWeldHandler(string client)
+        public SKWeldHandler(CustomInputModel userInput)
         {
-            _client = client ?? throw new ArgumentNullException(nameof(client));
+            _userInput = userInput;
+            _client = userInput.Client;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="beamAssemblyDrawing"></param>
+        /// <param name="mainPart"></param>
+        /// <param name="drawingHandler"></param>
         public void WeldMerge(TSD.AssemblyDrawing beamAssemblyDrawing, TSM.Part mainPart, TSD.DrawingHandler drawingHandler)
         {
             Type weldMarkType = typeof(TSD.WeldMark);

@@ -26,24 +26,21 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Views
 {
     public class SKBottomView
     {
+        private readonly CustomInputModel _userInput;
+
         private SKFlangeOutDimension flangeOutDimension;
 
         private string client; //client
 
-        private FontSizeSelector fontSize;
-
-        private readonly SKCatalogHandler catalogHandler;
 
         private readonly SKSortingHandler sortingHandler;
 
-        public SKBottomView(SKSortingHandler sortingHandler, SKCatalogHandler catalogHandler, SKFlangeOutDimension flangeOutDimensionstring,
-            string client,
-            FontSizeSelector fontSize)
+        public SKBottomView(SKSortingHandler sortingHandler,  SKFlangeOutDimension flangeOutDimension,
+            CustomInputModel userInput)
         {
             this.sortingHandler = sortingHandler;
-            this.catalogHandler = catalogHandler;
-            this.client = client;
-            this.fontSize = fontSize;
+            _userInput = userInput;
+            this.client = userInput.Client;
             this.flangeOutDimension = flangeOutDimension;
 
         }

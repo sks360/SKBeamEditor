@@ -21,18 +21,20 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 {
     public class SKFlangeOutDimension
     {
+        private readonly CustomInputModel _userInput;
+
         private string client;
 
         private FontSizeSelector fontSize;
 
         private readonly SKCatalogHandler catalogHandler;
 
-        public SKFlangeOutDimension(SKCatalogHandler catalogHandler, string client,
-            FontSizeSelector fontSize)
+            public SKFlangeOutDimension(SKCatalogHandler catalogHandler,CustomInputModel userInput)
         {
             this.catalogHandler = catalogHandler;
-            this.client = client;
-            this.fontSize = fontSize;
+            _userInput = userInput;
+            this.client = _userInput.Client;
+            this.fontSize = _userInput.FontSize;
         }
 
         public void Create_FLANGE_CUT_dimensions_top(TSD.View current_view, TSM.Beam main_part, string drg_att)

@@ -25,18 +25,20 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 {
     public class SkStudDimensions
     {
+
+        private readonly CustomInputModel _userInput;
         private string client; //client
 
         private FontSizeSelector fontSize;
 
         private readonly SKCatalogHandler catalogHandler;
 
-        public SkStudDimensions(SKCatalogHandler catalogHandler, string client,
-            FontSizeSelector fontSize)
+        public SkStudDimensions(SKCatalogHandler catalogHandler, CustomInputModel userInput)
         {
             this.catalogHandler = catalogHandler;
-            this.client = client;
-            this.fontSize = fontSize;
+            _userInput = userInput;
+            this.client = userInput.Client;
+            this.fontSize = userInput.FontSize;
         }
 
         public void Create_stud_dimensions(TSD.View current_view, ref List<Guid> PARTMARK_TO_RETAIN, string drg_att)

@@ -22,6 +22,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 {
     public class OutsideAssemblyDimension
     {
+        private readonly CustomInputModel _userInput;
+
         private string client;
 
         private FontSizeSelector fontSize;
@@ -41,17 +43,16 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
         public OutsideAssemblyDimension(SKCatalogHandler catalogHandler, 
             BoltMatrixHandler boltMatrixHandler, BoundingBoxHandler boundingBoxHandler,
             SKSortingHandler sortingHandler,
-            DuplicateRemover duplicateRemover,
-            string client,
-            FontSizeSelector fontSize)
+                DuplicateRemover duplicateRemover, CustomInputModel userInput)
         {
             this.catalogHandler = catalogHandler ?? throw new ArgumentNullException(nameof(catalogHandler));
             this.boltMatrixHandler = boltMatrixHandler ?? throw new ArgumentNullException(nameof(boltMatrixHandler));
             this.boundingBoxHandler = boundingBoxHandler ?? throw new ArgumentNullException(nameof(boundingBoxHandler));
             this.sortingHandler = sortingHandler ?? throw new ArgumentNullException(nameof(sortingHandler));
             this.duplicateRemover = duplicateRemover ?? throw new ArgumentNullException(nameof(duplicateRemover));
-            this.client = client ?? throw new ArgumentNullException(nameof(client));
-            this.fontSize = fontSize;
+            _userInput = userInput;
+            this.client = userInput.Client;
+            this.fontSize = userInput.FontSize;
         }
 
         public void DimensionForPartsOutsideAssembly(TSM.Beam mainPart, TSD.View currentView, double output, 

@@ -19,6 +19,13 @@ namespace SK.Tekla.Drawing.Automation.Models
 
         public CustomInputModel() { }
 
+        public bool NeedEleDimension { get; set; }
 
+        public bool NeedRDConnectionMark { get; set; }
+
+        public bool NeedCutLength { get; set; }
+
+
+        public double SecScale { get; set; }
     }
 }

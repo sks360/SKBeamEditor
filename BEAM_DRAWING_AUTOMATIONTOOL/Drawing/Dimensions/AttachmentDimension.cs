@@ -23,6 +23,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 {
     public class AttachmentDimension
     {
+        private readonly CustomInputModel _userInput;
+
         private string client;
 
         private FontSizeSelector fontSize;
@@ -39,7 +41,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
         private readonly SKDrawingHandler drawingHandler;
 
-        private readonly bool isRdConnectMark; //chkrdconnmark.Checked 
+        private readonly bool isRdConnectMark; 
 
         private readonly DuplicateRemover duplicateRemover;
 
@@ -47,19 +49,20 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
             BoltMatrixHandler boltMatrixHandler, BoundingBoxHandler boundingBoxHandler,
             SKSortingHandler sortingHandler,
             FacePointHandler facePointHandler,
-            string client,
-            FontSizeSelector fontSize, SKDrawingHandler drawingHandler, bool rdConnectMark, DuplicateRemover duplicateRemover)
+             SKDrawingHandler drawingHandler, DuplicateRemover duplicateRemover, CustomInputModel userInput)
         {
             this.catalogHandler = catalogHandler;
             this.boltMatrixHandler = boltMatrixHandler;
             this.boundingBoxHandler = boundingBoxHandler;
             this.sortingHandler = sortingHandler;
-            this.client = client;
-            this.fontSize = fontSize;
+            _userInput = userInput;
+            this.client = _userInput.Client;
+            this.fontSize = _userInput.FontSize;
             this.facePointHandler = facePointHandler;
             this.drawingHandler = drawingHandler;
-            this.isRdConnectMark = rdConnectMark;
+            this.isRdConnectMark = _userInput.NeedRDConnectionMark;
             this.duplicateRemover = duplicateRemover;
+            
         }
 
 

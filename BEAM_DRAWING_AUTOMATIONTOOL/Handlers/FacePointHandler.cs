@@ -7,18 +7,23 @@ using TSM = Tekla.Structures.Model;
 using TSS = Tekla.Structures.Solid;
 using SK.Tekla.Drawing.Automation.Support;
 using SK.Tekla.Drawing.Automation.Utils;
+using SK.Tekla.Drawing.Automation.Models;
 
 namespace SK.Tekla.Drawing.Automation.Handlers
 {
     public class FacePointHandler
     {
         private readonly BoundingBoxHandler boundingBoxHandler;
+
+        private readonly CustomInputModel _userInput;
+
         private readonly string client;
 
-        public FacePointHandler(BoundingBoxHandler boundingBoxHandler, string client)
+        public FacePointHandler(BoundingBoxHandler boundingBoxHandler, CustomInputModel userInput)
         {
             this.boundingBoxHandler = boundingBoxHandler ?? throw new ArgumentNullException(nameof(boundingBoxHandler));
-            this.client = client;
+            _userInput = userInput;
+            this.client = _userInput.Client;
         }
 
         #region Edge Point Methods
