@@ -310,11 +310,12 @@
       <DependentUpon>FormDrawingEditor.cs</DependentUpon>
     </Compile>
     <Compile Include="Handlers\SKBoltHandler.cs" />
+    <Compile Include="Handlers\SKFacePointHandler.cs" />
     <Compile Include="Handlers\SKSlopHandler.cs" />
     <Compile Include="Handlers\SKWeldHandler.cs" />
     <Compile Include="Handlers\SKAngleHandler.cs" />
     <Compile Include="Handlers\BoltMatrixHandler.cs" />
-    <Compile Include="Handlers\BoundingBoxHandler.cs" />
+    <Compile Include="Handlers\SKBoundingBoxHandler.cs" />
     <Compile Include="Handlers\FacePointHandler.cs" />
     <Compile Include="Handlers\SKCatalogHandler.cs" />
     <Compile Include="Handlers\SKDrawingHandler.cs" />

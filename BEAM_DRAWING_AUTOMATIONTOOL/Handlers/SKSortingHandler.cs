@@ -15,6 +15,7 @@ using System.Collections;
 using Tekla.Structures.Geometry3d;
 
 
+
 namespace SK.Tekla.Drawing.Automation.Handlers
 {
     /// <summary>
@@ -22,11 +23,15 @@ namespace SK.Tekla.Drawing.Automation.Handlers
     /// </summary>
     public class SKSortingHandler
     {
+        private static readonly log4net.ILog _logger =
+       log4net.LogManager.GetLogger(typeof(SKSortingHandler));
+
         public SKSortingHandler() { }
         public enum SortBy
         {
             X,
-            Y
+            Y,
+            Z
         }
 
         public enum SortOrder
@@ -34,8 +39,6 @@ namespace SK.Tekla.Drawing.Automation.Handlers
             Ascending,
             Descending
         }
-        private static readonly log4net.ILog _logger =
-       log4net.LogManager.GetLogger(typeof(SKSortingHandler));
 
         public TSD.PointList SortPoints(ArrayList arrayList, TSD.View view, SortBy sortBy = SortBy.X,
        SortOrder sortOrder = SortOrder.Ascending)
@@ -162,11 +165,11 @@ namespace SK.Tekla.Drawing.Automation.Handlers
 
         //    return SortPoints(points.ToList(), sortBy, sortOrder);
         //}
-        public TSD.PointList SortPoints(List<Point> pointsList,
+        public void SortPoints(List<Point> pointsList,
            SortBy sortBy = SortBy.X, SortOrder sortOrder = SortOrder.Ascending)
         {
             if (!pointsList.Any())
-                return new TSD.PointList();
+                return;
 
             var sortedPoints = sortOrder == SortOrder.Ascending
                 ? sortBy == SortBy.X
@@ -176,13 +179,8 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                     ? pointsList.OrderByDescending(p => p.X)
                     : pointsList.OrderByDescending(p => p.Y);
 
-            var pointList = new TSD.PointList();
-            foreach (var point in sortedPoints)
-            {
-                pointList.Add(point);
-            }
 
-            return pointList;
+            pointsList = sortedPoints.ToList();
         }
 
         public TSD.PointList SortPoints(TSD.PointList points, SortBy sortBy = SortBy.X,

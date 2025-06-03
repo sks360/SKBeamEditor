@@ -32,7 +32,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
         private readonly BoltMatrixHandler boltMatrixHandler;
 
-        private readonly BoundingBoxHandler boundingBoxHandler;
+        private readonly SKBoundingBoxHandler boundingBoxHandler;
 
         private readonly SKSortingHandler sortingHandler;
 
@@ -42,7 +42,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
         private const double Tolerance = 1e-6;
 
         public GussetDimension(SKCatalogHandler catalogHandler, 
-            BoltMatrixHandler boltMatrixHandler, BoundingBoxHandler boundingBoxHandler,
+            BoltMatrixHandler boltMatrixHandler, SKBoundingBoxHandler boundingBoxHandler,
             SKSortingHandler sortingHandler,CustomInputModel userInput)
         {
             this.catalogHandler = catalogHandler;
@@ -111,8 +111,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                 Vector zVectorPlate = Vector.Cross(xVectorPlate, yVectorPlate);
                 model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TransformationPlane());
 
-                PointList boundingBoxX = boundingBoxHandler.bounding_box_sort_x(plate, currentView);
-                PointList boundingBoxY = boundingBoxHandler.bounding_box_sort_y(plate, currentView);
+                PointList boundingBoxX = boundingBoxHandler.BoundingBoxSort(plate, currentView);
+                PointList boundingBoxY = boundingBoxHandler.BoundingBoxSort(plate, currentView,SKSortingHandler.SortBy.Y);
 
                 PointList plateCornerPoints = GetPlateCornerPoints(boundingBoxX, boundingBoxY);
 

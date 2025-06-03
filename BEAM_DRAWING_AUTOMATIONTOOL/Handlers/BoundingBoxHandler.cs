@@ -21,24 +21,7 @@ namespace SK.Tekla.Drawing.Automation.Handlers
         public TSD.PointList bounding_box_sort_z(TSM.ModelObject mymodel_object, TSD.View current_view)
         {
             TSD.PointList bounding_box_pts = new TSD.PointList();
-            //TSM.ModelObject assembly_for_check = mymodel_object;
-            ////////////////////////////////////////////////assembly bounding box logic//////////////////////////////////////////////////////////////////
-            //double x1 = 0, y1 = 0, z1 = 0, x2 = 0, y2 = 0, z2 = 0;
-            //assembly_for_check.GetReportProperty("BOUNDING_BOX_MIN_X", ref x1);
-            //assembly_for_check.GetReportProperty("BOUNDING_BOX_MIN_Y", ref y1);
-            //assembly_for_check.GetReportProperty("BOUNDING_BOX_MIN_Z", ref z1);
-            //assembly_for_check.GetReportProperty("BOUNDING_BOX_MAX_X", ref x2);
-            //assembly_for_check.GetReportProperty("BOUNDING_BOX_MAX_Y", ref y2);
-            //assembly_for_check.GetReportProperty("BOUNDING_BOX_MAX_Z", ref z2);
-            //TSG.Point workpointst_1 = new TSG.Point(x1, y1, z1);
-            //TSG.Point workpointend_1 = new TSG.Point(x2, y2, z2);
-            //TSG.Matrix toviewmatrix = TSG.MatrixFactory.ToCoordinateSystem(current_view.ViewCoordinateSystem);
 
-            //TSG.Point workpointst2 = toviewmatrix.Transform(workpointst_1);
-
-            //TSG.Point workpointend2 = toviewmatrix.Transform(workpointend_1);
-            //bounding_box_pts.Add(workpointst2);
-            //bounding_box_pts.Add(workpointend2);
             TSM.Model MYMODEL = new TSM.Model();
             MYMODEL.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.DisplayCoordinateSystem));
             TSM.Solid MYSOLID = (mymodel_object as TSM.Part).GetSolid();

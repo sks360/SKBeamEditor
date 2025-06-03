@@ -32,7 +32,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
         private readonly BoltMatrixHandler boltMatrixHandler;
 
-        private readonly BoundingBoxHandler boundingBoxHandler;
+        private readonly SKBoundingBoxHandler boundingBoxHandler;
 
         private readonly SKSortingHandler sortingHandler;
 
@@ -41,7 +41,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
         private const double DimensionOffset = 10;
 
         public OutsideAssemblyDimension(SKCatalogHandler catalogHandler, 
-            BoltMatrixHandler boltMatrixHandler, BoundingBoxHandler boundingBoxHandler,
+            BoltMatrixHandler boltMatrixHandler, SKBoundingBoxHandler boundingBoxHandler,
             SKSortingHandler sortingHandler,
                 DuplicateRemover duplicateRemover, CustomInputModel userInput)
         {
@@ -86,7 +86,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                 TSM.Part plate = myPart as TSM.Part;
                 if (plate == null || plate.Identifier.GUID == mainPart.Identifier.GUID) continue;
 
-                PointList myPointList = boundingBoxHandler.bounding_box_sort_x(plate, currentView);
+                PointList myPointList = boundingBoxHandler.BoundingBoxSort(plate, currentView);
                 AddPartToListIfOutside(plate, myPointList, output, leftPoints, rightPoints, partMarkToRetain);
             }
 

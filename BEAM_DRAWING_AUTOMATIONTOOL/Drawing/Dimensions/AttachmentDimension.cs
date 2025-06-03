@@ -33,7 +33,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
         private readonly BoltMatrixHandler boltMatrixHandler;
 
-        private readonly BoundingBoxHandler boundingBoxHandler;
+        private readonly SKBoundingBoxHandler boundingBoxHandler;
 
         private readonly SKSortingHandler sortingHandler;
 
@@ -46,7 +46,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
         private readonly DuplicateRemover duplicateRemover;
 
         public AttachmentDimension(SKCatalogHandler catalogHandler, 
-            BoltMatrixHandler boltMatrixHandler, BoundingBoxHandler boundingBoxHandler,
+            BoltMatrixHandler boltMatrixHandler, SKBoundingBoxHandler boundingBoxHandler,
             SKSortingHandler sortingHandler,
             FacePointHandler facePointHandler,
              SKDrawingHandler drawingHandler, DuplicateRemover duplicateRemover, CustomInputModel userInput)
@@ -104,8 +104,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                 plate.GetReportProperty("PROFILE_TYPE", ref prof_type);
                 //////////////////////////////////Filtering all the plates////////////////////////////////
 
-                TSD.PointList bounding_box_x = boundingBoxHandler.bounding_box_sort_x(plate, current_view);
-                TSD.PointList bounding_box_y = boundingBoxHandler.bounding_box_sort_y(plate, current_view);
+                TSD.PointList bounding_box_x = boundingBoxHandler.BoundingBoxSort(plate, current_view);
+                TSD.PointList bounding_box_y = boundingBoxHandler.BoundingBoxSort(plate, current_view, SortBy.Y);
                 model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.ViewCoordinateSystem));
                 TSG.Vector x_vec_of_plate = plate.GetCoordinateSystem().AxisX;
                 TSG.Vector y_vec_of_plate = plate.GetCoordinateSystem().AxisY;
@@ -203,8 +203,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                 plate.GetReportProperty("PROFILE_TYPE", ref prof_type);
                 //////////////////////////////////Filtering all the plates////////////////////////////////
 
-                TSD.PointList bounding_box_x = boundingBoxHandler.bounding_box_sort_x(plate, current_view);
-                TSD.PointList bounding_box_y = boundingBoxHandler.bounding_box_sort_y(plate, current_view);
+                TSD.PointList bounding_box_x = boundingBoxHandler.BoundingBoxSort(plate, current_view);
+                TSD.PointList bounding_box_y = boundingBoxHandler.BoundingBoxSort(plate, current_view,SortBy.Y);
                 model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.ViewCoordinateSystem));
                 TSG.Vector x_vec_of_plate = plate.GetCoordinateSystem().AxisX;
                 TSG.Vector y_vec_of_plate = plate.GetCoordinateSystem().AxisY;
@@ -246,7 +246,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                     int a = platebolts.GetSize();
                                     if (a > 0)
                                     {
-                                        TSD.PointList p1 = boundingBoxHandler.bounding_box_sort_x(plate, current_view);
+                                        TSD.PointList p1 = boundingBoxHandler.BoundingBoxSort(plate, current_view);
 
 
                                         while (platebolts.MoveNext())
@@ -1001,8 +1001,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                 plate.GetReportProperty("PROFILE_TYPE", ref prof_type);
                 //////////////////////////////////Filtering all the plates////////////////////////////////
 
-                TSD.PointList bounding_box_x = boundingBoxHandler.bounding_box_sort_x(plate, current_view);
-                TSD.PointList bounding_box_y = boundingBoxHandler.bounding_box_sort_y(plate, current_view);
+                TSD.PointList bounding_box_x = boundingBoxHandler.BoundingBoxSort(plate, current_view);
+                TSD.PointList bounding_box_y = boundingBoxHandler.BoundingBoxSort(plate, current_view, SortBy.Y);
                 model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.ViewCoordinateSystem));
                 TSG.Vector x_vec_of_plate = plate.GetCoordinateSystem().AxisX;
                 TSG.Vector y_vec_of_plate = plate.GetCoordinateSystem().AxisY;
@@ -1045,7 +1045,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                     int a = platebolts.GetSize();
                                     if (a > 0)
                                     {
-                                        TSD.PointList p1 = boundingBoxHandler.bounding_box_sort_x(plate, current_view);
+                                        TSD.PointList p1 = boundingBoxHandler.BoundingBoxSort(plate, current_view);
 
 
                                         while (platebolts.MoveNext())
@@ -1401,7 +1401,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                             //        int a = platebolts.GetSize();
                             //        if (a > 0)
                             //        {
-                            //            TSD.PointList p1 = boundingBoxHandler.bounding_box_sort_x(plate, current_view);
+                            //            TSD.PointList p1 = boundingBoxHandler.BoundingBoxSort(plate, current_view);
 
 
                             //            while (platebolts.MoveNext())
@@ -2004,8 +2004,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                 plate.GetReportProperty("PROFILE_TYPE", ref prof_type);
                 //////////////////////////////////Filtering all the plates////////////////////////////////
 
-                TSD.PointList bounding_box_y = boundingBoxHandler.bounding_box_sort_y(plate, current_view);
-                TSD.PointList bounding_box_x = boundingBoxHandler.bounding_box_sort_x(plate, current_view);
+                TSD.PointList bounding_box_y = boundingBoxHandler.BoundingBoxSort(plate, current_view, SortBy.Y);
+                TSD.PointList bounding_box_x = boundingBoxHandler.BoundingBoxSort(plate, current_view);
                 model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.ViewCoordinateSystem));
                 TSG.Vector x_vec_of_plate = plate.GetCoordinateSystem().AxisX;
                 TSG.Vector y_vec_of_plate = plate.GetCoordinateSystem().AxisY;
@@ -2123,7 +2123,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                             int a = platebolts.GetSize();
                             if (a > 0)
                             {
-                                TSD.PointList p1 = boundingBoxHandler.bounding_box_sort_x(plate, current_view);
+                                TSD.PointList p1 = boundingBoxHandler.BoundingBoxSort(plate, current_view);
 
 
                                 while (platebolts.MoveNext())
@@ -3450,8 +3450,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                 plate.GetReportProperty("PROFILE_TYPE", ref prof_type);
                 //////////////////////////////////Filtering all the plates////////////////////////////////
 
-                TSD.PointList bounding_box_x = boundingBoxHandler.bounding_box_sort_x(plate, current_view);
-                TSD.PointList bounding_box_y = boundingBoxHandler.bounding_box_sort_y(plate, current_view);
+                TSD.PointList bounding_box_x = boundingBoxHandler.BoundingBoxSort(plate, current_view);
+                TSD.PointList bounding_box_y = boundingBoxHandler.BoundingBoxSort(plate, current_view, SortBy.Y);
                 model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.ViewCoordinateSystem));
                 TSG.Vector x_vec_of_plate = plate.GetCoordinateSystem().AxisX;
                 TSG.Vector y_vec_of_plate = plate.GetCoordinateSystem().AxisY;
@@ -3586,8 +3586,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                 plate.GetReportProperty("PROFILE_TYPE", ref prof_type);
                 //////////////////////////////////Filtering all the plates////////////////////////////////
 
-                TSD.PointList bounding_box_y = boundingBoxHandler.bounding_box_sort_y(plate, current_view);
-                TSD.PointList bounding_box_x = boundingBoxHandler.bounding_box_sort_x(plate, current_view);
+                TSD.PointList bounding_box_y = boundingBoxHandler.BoundingBoxSort(plate, current_view, SortBy.Y);
+                TSD.PointList bounding_box_x = boundingBoxHandler.BoundingBoxSort(plate, current_view);
                 model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.ViewCoordinateSystem));
                 TSG.Vector x_vec_of_plate = plate.GetCoordinateSystem().AxisX;
                 TSG.Vector y_vec_of_plate = plate.GetCoordinateSystem().AxisY;

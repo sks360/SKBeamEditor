@@ -78,9 +78,9 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
 
         private string client;
 
-        private double _scale = 20;
+        private double _scale = 10;
 
-        private double _minLength = 1789.5998; //A1 sheet
+        private double _minLength = 1666.24; //A3 sheet
 
         private static readonly log4net.ILog _logger =
         log4net.LogManager.GetLogger(typeof(FormDrawingEditor));

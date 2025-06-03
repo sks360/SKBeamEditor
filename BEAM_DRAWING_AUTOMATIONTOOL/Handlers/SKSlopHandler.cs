@@ -54,9 +54,9 @@ namespace SK.Tekla.Drawing.Automation.Handlers
             return isYAxisPositive ? boltCoord.AxisX : boltCoord.AxisY;
         }
 
-       
 
-        public void slope_bolt_logic(List<TSG.Point> singlebolts1, TSG.Matrix to_rotate_matrix, 
+
+        public void slope_bolt_logic(List<TSG.Point> singlebolts1, TSG.Matrix to_rotate_matrix,
             TSD.View current_view, double output, List<double> MAINPART_PROFILE_VALUES, TSG.Vector myvector_for_slope_bolt, TSG.Vector yvector_for_slope_bolt, string drg_att)
         {
             double angle_check_FOR_NOT_IN_VIEW = Math.Abs(SKUtility.RadianToDegree((myvector_for_slope_bolt.GetAngleBetween(new TSG.Vector(1, 0, 0)))));
@@ -89,6 +89,10 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                 myclass.Add(new slope_bolt_class { converted_pts = myconverted_pt, original_pt = pt, x_dist_of_rotated = Math.Abs(x_value_rotated) });
             }
             int increment_for_grouping1 = 1;
+            if(myclass.Count == 0)
+            {
+                throw new Exception("Slop Blot does not contain data");
+            }
             for (int i = 0; i < myclass.Count - 1; i++)
             {
                 int current = i;

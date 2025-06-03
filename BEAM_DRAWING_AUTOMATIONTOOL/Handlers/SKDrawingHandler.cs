@@ -19,11 +19,11 @@ namespace SK.Tekla.Drawing.Automation.Handlers
         private bool KnockOffDimension = true; //TODO VEERA this must be fetched from form
 
 
-        private readonly BoundingBoxHandler boundingBoxHandler;
+        private readonly SKBoundingBoxHandler boundingBoxHandler;
 
         private readonly SKCatalogHandler catalogHandler;
 
-        public SKDrawingHandler(BoundingBoxHandler boundingBoxHandler,
+        public SKDrawingHandler(SKBoundingBoxHandler boundingBoxHandler,
             SKCatalogHandler catalogHandler)
         {
             this.boundingBoxHandler = boundingBoxHandler;
@@ -102,7 +102,7 @@ namespace SK.Tekla.Drawing.Automation.Handlers
 
             TSD.DrawingObjectEnumerator enum_for_drg_views_del = ASSEMBLY_DRAWING.GetSheet().GetAllViews();
 
-            TSD.PointList ASSEMBLY_BOUNDING_BOX = boundingBoxHandler.bounding_box_FOR_DIM(ASSEMBLY);
+            TSD.PointList ASSEMBLY_BOUNDING_BOX = boundingBoxHandler.BoundingBoxForDimension(ASSEMBLY);
 
             TSG.Point workpointst_1 = ASSEMBLY_BOUNDING_BOX[0];
             TSG.Point workpointend_1 = ASSEMBLY_BOUNDING_BOX[1];
@@ -258,7 +258,7 @@ namespace SK.Tekla.Drawing.Automation.Handlers
             foreach (TSM.Part mypl in list_of)
             {
 
-                TSD.PointList ptlist = boundingBoxHandler.bounding_box_sort_x(mypl, main_part as TSM.Beam);
+                TSD.PointList ptlist = boundingBoxHandler.BoundingBoxSort(mypl, main_part as TSM.Beam);
                 double distance = Convert.ToInt16(ptlist[0].Z) + Convert.ToInt16(ptlist[1].Z);
                 TSG.Matrix TO_VIEW_MATRIX = TSG.MatrixFactory.ToCoordinateSystem(main_part.GetCoordinateSystem());
                 TSG.Point P1 = TO_VIEW_MATRIX.Transform((main_part as TSM.Beam).StartPoint);
@@ -336,7 +336,7 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                     ArrayList list_of_points = new ArrayList();
                     foreach (TSM.Part myplaye in list_of_obj)
                     {
-                        TSD.PointList ptlist = boundingBoxHandler.bounding_box_sort_x(myplaye, main_part as TSM.Beam);
+                        TSD.PointList ptlist = boundingBoxHandler.BoundingBoxSort(myplaye, main_part as TSM.Beam);
 
 
                         TSD.PointList m1 = converted_points(ptlist, main_part as TSM.Beam, current_view);
@@ -656,10 +656,10 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                             double mny = 0;
                             double mxy = 0;
 
-                            minx = list2[i].partlist.Min(x => boundingBoxHandler.bounding_box_sort_x(x, current_view)[0].X);
-                            maxx = list2[i].partlist.Max(x => boundingBoxHandler.bounding_box_sort_x(x, current_view)[1].X);
-                            mny = list2[i].partlist.Min(x => boundingBoxHandler.bounding_box_sort_x(x, current_view)[0].Y);
-                            mxy = list2[i].partlist.Max(x => boundingBoxHandler.bounding_box_sort_x(x, current_view)[1].Y);
+                            minx = list2[i].partlist.Min(x => boundingBoxHandler.BoundingBoxSort(x, current_view)[0].X);
+                            maxx = list2[i].partlist.Max(x => boundingBoxHandler.BoundingBoxSort(x, current_view)[1].X);
+                            mny = list2[i].partlist.Min(x => boundingBoxHandler.BoundingBoxSort(x, current_view)[0].Y);
+                            mxy = list2[i].partlist.Max(x => boundingBoxHandler.BoundingBoxSort(x, current_view)[1].Y);
 
                             double miny = Convert.ToInt64(mny);
                             double maxy = Convert.ToInt64(mxy);
@@ -876,7 +876,7 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                                 {
                                     TSD.Part MYDRG_PART = BOTTOM.Current as TSD.Part;
                                     TSM.ModelObject MMODEL = new TSM.Model().SelectModelObject(MYDRG_PART.ModelIdentifier);
-                                    TSD.PointList bounding_box_z = boundingBoxHandler.bounding_box_sort_z(MMODEL, bottom_view);
+                                    TSD.PointList bounding_box_z = boundingBoxHandler.BoundingBoxSort(MMODEL, bottom_view, SKSortingHandler.SortBy.Z);
 
                                     if ((Convert.ToInt64(bounding_box_z[1].Z) >= Convert.ToInt64(bottom_view.RestrictionBox.MinPoint.Z)) && (Convert.ToInt64(bounding_box_z[0].Z) <= Convert.ToInt64(bottom_view.RestrictionBox.MaxPoint.Z)))
                                     {
@@ -1291,10 +1291,10 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                     double mny = 0;
                     double mxy = 0;
 
-                    minx = list2[i].partlist.Min(x => boundingBoxHandler.bounding_box_sort_x(x, current_view)[0].X);
-                    maxx = list2[i].partlist.Max(x => boundingBoxHandler.bounding_box_sort_x(x, current_view)[1].X);
-                    mny = list2[i].partlist.Min(x => boundingBoxHandler.bounding_box_sort_x(x, current_view)[0].Y);
-                    mxy = list2[i].partlist.Max(x => boundingBoxHandler.bounding_box_sort_x(x, current_view)[1].Y);
+                    minx = list2[i].partlist.Min(x => boundingBoxHandler.BoundingBoxSort(x, current_view)[0].X);
+                    maxx = list2[i].partlist.Max(x => boundingBoxHandler.BoundingBoxSort(x, current_view)[1].X);
+                    mny = list2[i].partlist.Min(x => boundingBoxHandler.BoundingBoxSort(x, current_view)[0].Y);
+                    mxy = list2[i].partlist.Max(x => boundingBoxHandler.BoundingBoxSort(x, current_view)[1].Y);
 
                     double miny = Convert.ToInt64(mny);
                     double maxy = Convert.ToInt64(mxy);
@@ -1721,10 +1721,10 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                     double mny = 0;
                     double mxy = 0;
 
-                    minx = list2[i].partlist.Min(x => boundingBoxHandler.bounding_box_sort_x(x, current_view)[0].X);
-                    maxx = list2[i].partlist.Max(x => boundingBoxHandler.bounding_box_sort_x(x, current_view)[1].X);
-                    mny = list2[i].partlist.Min(x => boundingBoxHandler.bounding_box_sort_x(x, current_view)[0].Y);
-                    mxy = list2[i].partlist.Max(x => boundingBoxHandler.bounding_box_sort_x(x, current_view)[1].Y);
+                    minx = list2[i].partlist.Min(x => boundingBoxHandler.BoundingBoxSort(x, current_view)[0].X);
+                    maxx = list2[i].partlist.Max(x => boundingBoxHandler.BoundingBoxSort(x, current_view)[1].X);
+                    mny = list2[i].partlist.Min(x => boundingBoxHandler.BoundingBoxSort(x, current_view)[0].Y);
+                    mxy = list2[i].partlist.Max(x => boundingBoxHandler.BoundingBoxSort(x, current_view)[1].Y);
 
                     double miny = Convert.ToInt64(mny);
                     double maxy = Convert.ToInt64(mxy);

@@ -27,7 +27,7 @@ namespace SK.Tekla.Drawing.Automation.Services
 {
     public class BeamDrawingCreator
     {
-        private BoundingBoxHandler boundingBoxHandler;
+        private SKBoundingBoxHandler boundingBoxHandler;
         private FacePointHandler facePointHandler;
         private SKSortingHandler sortingHandler = new SKSortingHandler();
 
@@ -82,7 +82,7 @@ namespace SK.Tekla.Drawing.Automation.Services
         {
             _messageStore = messageStore;
             _inputModel = inputModel;
-            boundingBoxHandler = new BoundingBoxHandler();
+            boundingBoxHandler = new SKBoundingBoxHandler();
             streamlineDrawing = new StreamlineDrawing();
             facePointHandler = new FacePointHandler(boundingBoxHandler, _inputModel);
 
@@ -112,9 +112,11 @@ namespace SK.Tekla.Drawing.Automation.Services
             skAngleHandler = new SKAngleHandler(boltMatrixHandler);
 
             bool tekla_open = TeklaStructures.Connect();
-
+            if (!tekla_open)
+            {
+                throw new Exception("Connection with Tekla cannot be established!!!");
+            }
             string msgCaption = String.Empty;
-            if (tekla_open == true)
             {
                 _logger.Debug("Tekla Connection established....");
                 DateTime s_tm = new DateTime();
@@ -209,7 +211,8 @@ namespace SK.Tekla.Drawing.Automation.Services
                             TSD.StraightDimension overall_dim;
                             ////////////////////////////////////////////////////deleting dimension and getting required information using function//////////////////////////////////////////////////////
 
-                            mymodel.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(currentBeamMainpart.GetCoordinateSystem()));
+                            mymodel.GetWorkPlaneHandler().
+                                SetCurrentTransformationPlane(new TSM.TransformationPlane(currentBeamMainpart.GetCoordinateSystem()));
 
                             TSG.Matrix VIEW_MATRIX = TSG.MatrixFactory.ToCoordinateSystem(currentBeamMainpart.GetCoordinateSystem());
                             List<section_loc_with_parts> list = new List<section_loc_with_parts>();
@@ -231,8 +234,8 @@ namespace SK.Tekla.Drawing.Automation.Services
 
                             SKLayout skLayout = new SKLayout()
                             {
-                                attribute = "VBR_BEAM_A1",
-                                adFileName = "SK_BEAM_A1",
+                                attribute = "VBR_BEAM_A3",
+                                adFileName = "SK_BEAM_A3",
                                 scale = _inputModel.Scale,
                                 minLenth = _inputModel.MinLength
                             };
@@ -344,7 +347,7 @@ namespace SK.Tekla.Drawing.Automation.Services
 
                                 foreach (TSM.Part part in list_of_secondaries)
                                 {
-                                    TSD.PointList bbz = boundingBoxHandler.bounding_box_sort_z(part, main_part as TSM.Beam);
+                                    TSD.PointList bbz = boundingBoxHandler.BoundingBoxSort(part, main_part as TSM.Beam, SKSortingHandler.SortBy.Z);
 
                                     if (bbz[1].Z < WT1)
                                     {
@@ -363,7 +366,7 @@ namespace SK.Tekla.Drawing.Automation.Services
                             {
                                 foreach (TSM.Part part in list_of_secondaries)
                                 {
-                                    TSD.PointList bbz = boundingBoxHandler.bounding_box_sort_z(part, main_part as TSM.Beam);
+                                    TSD.PointList bbz = boundingBoxHandler.BoundingBoxSort(part, main_part as TSM.Beam, SKSortingHandler.SortBy.Z);
 
 
                                     if (bbz[1].Z < 0)
@@ -399,7 +402,8 @@ namespace SK.Tekla.Drawing.Automation.Services
                                 #region FRONT_VIEW
                                 //////////////////////////////////////////////////bolt rd dimension in front view using matrix function ///////////////////////////////////////////////////////////////////////
                                 ConfigureFrontViewBoldDimension(mymodel, currentAssemblyDrawing, main_part, output,
-                                    defaultADFile, list, list_of_radius, SCALE, MAINPART_PROFILE_VALUES, main, ref FRONT_VIEW_PARTMARK_TO_RETAIN, ref FRONT_VIEW_BOLTMARK_TO_RETAIN, current_view, ref SHORTNENING_VALUE_FOR_BOTTOM_VIEW);
+                                    defaultADFile, list, list_of_radius, SCALE, MAINPART_PROFILE_VALUES, main, 
+                                    ref FRONT_VIEW_PARTMARK_TO_RETAIN, ref FRONT_VIEW_BOLTMARK_TO_RETAIN, current_view, ref SHORTNENING_VALUE_FOR_BOTTOM_VIEW);
 
                                 #endregion
 
@@ -486,7 +490,8 @@ namespace SK.Tekla.Drawing.Automation.Services
 
                                         SECTION_VIEW_PARTMARK_TO_RETAIN.Add(mypart.Identifier.GUID);
 
-                                        TSD.PointList angle_hole_locking_check = boundingBoxHandler.bounding_box_sort_y(list_of_parts as TSM.ModelObject, current_view);
+                                        TSD.PointList angle_hole_locking_check = 
+                                            boundingBoxHandler.BoundingBoxSort(list_of_parts as TSM.ModelObject, current_view, SKSortingHandler.SortBy.Y);
 
 
                                         TSM.ModelObjectEnumerator enum_for_bolt = list_of_parts.GetBolts();
@@ -979,7 +984,7 @@ namespace SK.Tekla.Drawing.Automation.Services
 
 
                                         TSM.Part mypart = list_of_parts as TSM.Part;
-                                        TSD.PointList mypt = boundingBoxHandler.bounding_box_sort_z(list_of_parts, current_view);
+                                        TSD.PointList mypt = boundingBoxHandler.BoundingBoxSort(list_of_parts, current_view, SKSortingHandler.SortBy.Z);
                                         TSD.PointList mypt_final = new TSD.PointList();
                                         TSD.PointList mypt_finalFOR_LEG = new TSD.PointList();
                                         double height11 = Convert.ToDouble(MAINPART_PROFILE_VALUES[0]);
@@ -2202,10 +2207,10 @@ namespace SK.Tekla.Drawing.Automation.Services
                                         TSM.Part mm = list_of_parts as TSM.Part;
                                         string prof_type = "";
                                         mm.GetReportProperty("PROFILE_TYPE", ref prof_type);
-                                        TSD.PointList bounding_box_x = boundingBoxHandler.bounding_box_sort_x(mm, current_view);
-                                        TSD.PointList bounding_box_y = boundingBoxHandler.bounding_box_sort_y(mm, current_view);
+                                        TSD.PointList bounding_box_x = boundingBoxHandler.BoundingBoxSort(mm, current_view);
+                                        TSD.PointList bounding_box_y = boundingBoxHandler.BoundingBoxSort(mm, current_view, SKSortingHandler.SortBy.Y);
 
-                                        TSD.PointList mypt = boundingBoxHandler.bounding_box_sort_z(list_of_parts, current_view);
+                                        TSD.PointList mypt = boundingBoxHandler.BoundingBoxSort(list_of_parts, current_view, SKSortingHandler.SortBy.Z);
                                         TSD.PointList mypt_final = new TSD.PointList();
                                         TSD.PointList mypt_final_FOR_LEG = new TSD.PointList();
                                         double height11 = Convert.ToDouble(MAINPART_PROFILE_VALUES[0]) / 2;
@@ -2342,8 +2347,8 @@ namespace SK.Tekla.Drawing.Automation.Services
                                                     if (POINT_FOR_BOLT_MATRIX == null)
                                                     {
 
-                                                        //TSD.PointList p1 = bounding_box_sort_x(mm, current_view);
-                                                        TSD.PointList p1 = boundingBoxHandler.bounding_box_sort_y(mm, current_view);
+                                                        //TSD.PointList p1 = BoundingBoxSort(mm, current_view);
+                                                        TSD.PointList p1 = boundingBoxHandler.BoundingBoxSort(mm, current_view, SKSortingHandler.SortBy.Y);
 
 
                                                         //TSM.BoltGroup bolt = MODELbolt.Current as TSM.BoltGroup;
@@ -2676,7 +2681,7 @@ namespace SK.Tekla.Drawing.Automation.Services
                                         TSM.Part mypart = list_of_parts as TSM.Part;
                                         SECTION_VIEW_PARTMARK_TO_RETAIN.Add(mypart.Identifier.GUID);
 
-                                        TSD.PointList angle_hole_locking_check = boundingBoxHandler.bounding_box_sort_y(list_of_parts as TSM.ModelObject, current_view);
+                                        TSD.PointList angle_hole_locking_check = boundingBoxHandler.BoundingBoxSort(list_of_parts as TSM.ModelObject, current_view, SKSortingHandler.SortBy.Y);
 
 
                                         TSM.ModelObjectEnumerator enum_for_bolt = list_of_parts.GetBolts();
@@ -3141,7 +3146,7 @@ namespace SK.Tekla.Drawing.Automation.Services
 
 
                                         TSM.Part mypart = list_of_parts as TSM.Part;
-                                        TSD.PointList mypt = boundingBoxHandler.bounding_box_sort_z(list_of_parts, current_view);
+                                        TSD.PointList mypt = boundingBoxHandler.BoundingBoxSort(list_of_parts, current_view, SKSortingHandler.SortBy.Z);
                                         TSD.PointList mypt_final = new TSD.PointList();
                                         TSD.PointList mypt_finalFOR_LEG = new TSD.PointList();
                                         double height11 = Convert.ToDouble(MAINPART_PROFILE_VALUES[0]);
@@ -4337,10 +4342,10 @@ namespace SK.Tekla.Drawing.Automation.Services
                                         TSM.Part mm = list_of_parts as TSM.Part;
                                         string prof_type = "";
                                         mm.GetReportProperty("PROFILE_TYPE", ref prof_type);
-                                        TSD.PointList bounding_box_x = boundingBoxHandler.bounding_box_sort_x(mm, current_view);
-                                        TSD.PointList bounding_box_y = boundingBoxHandler.bounding_box_sort_y(mm, current_view);
+                                        TSD.PointList bounding_box_x = boundingBoxHandler.BoundingBoxSort(mm, current_view);
+                                        TSD.PointList bounding_box_y = boundingBoxHandler.BoundingBoxSort(mm, current_view,SKSortingHandler.SortBy.Y);
 
-                                        TSD.PointList mypt = boundingBoxHandler.bounding_box_sort_z(list_of_parts, current_view);
+                                        TSD.PointList mypt = boundingBoxHandler.BoundingBoxSort(list_of_parts, current_view, SKSortingHandler.SortBy.Z);
                                         TSD.PointList mypt_final = new TSD.PointList();
                                         TSD.PointList mypt_final_FOR_LEG = new TSD.PointList();
                                         double height11 = Convert.ToDouble(MAINPART_PROFILE_VALUES[0]) / 2;
@@ -4480,7 +4485,7 @@ namespace SK.Tekla.Drawing.Automation.Services
                                                     else
                                                     {
 
-                                                        TSD.PointList p1 = boundingBoxHandler.bounding_box_sort_y(mm, current_view);
+                                                        TSD.PointList p1 = boundingBoxHandler.BoundingBoxSort(mm, current_view, SKSortingHandler.SortBy.Y);
 
 
 
