@@ -244,41 +244,42 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
                                     List<string> all = files.GetMultiDirectoryFileList("ad", false);
                                     List<string> drg_att_list = new List<string>();
                                     List<string> D_ATT1 = new List<string>();
+                                    drg_att_list = all.Where(X => X.Contains("VBR_BEAM_A1")).ToList();
+                                    D_ATT1 = all.Where(X => X.Contains("SK_BEAM_A1")).ToList();
 
+                                    //if (chka1.Checked == true)
+                                    //{
 
-                                    if (chka1.Checked == true)
-                                    {
+                                    //    drg_att_list = all.Where(X => X.Contains("VBR_BEAM_A1")).ToList();
+                                    //    D_ATT1 = all.Where(X => X.Contains("SK_BEAM_A1")).ToList();
 
-                                        drg_att_list = all.Where(X => X.Contains("VBR_BEAM_A1")).ToList();
-                                        D_ATT1 = all.Where(X => X.Contains("SK_BEAM_A1")).ToList();
+                                    //}
+                                    //else if (chka2.Checked == true)
+                                    //{
+                                    //    drg_att_list = all.Where(X => X.Contains("VBR_BEAM_A2")).ToList();
+                                    //    D_ATT1 = all.Where(X => X.Contains("SK_BEAM_A2")).ToList();
+                                    //}
 
-                                    }
-                                    else if (chka2.Checked == true)
-                                    {
-                                        drg_att_list = all.Where(X => X.Contains("VBR_BEAM_A2")).ToList();
-                                        D_ATT1 = all.Where(X => X.Contains("SK_BEAM_A2")).ToList();
-                                    }
+                                    //else if (chka3.Checked == true)
+                                    //{
 
-                                    else if (chka3.Checked == true)
-                                    {
+                                    //    drg_att_list = all.Where(X => X.Contains("VBR_BEAM_A3")).ToList();
+                                    //    D_ATT1 = all.Where(X => X.Contains("SK_BEAM_A3")).ToList();
 
-                                        drg_att_list = all.Where(X => X.Contains("VBR_BEAM_A3")).ToList();
-                                        D_ATT1 = all.Where(X => X.Contains("SK_BEAM_A3")).ToList();
+                                    //}
+                                    //else if (chka0.Checked == true)
+                                    //{
 
-                                    }
-                                    else if (chka0.Checked == true)
-                                    {
+                                    //    drg_att_list = all.Where(X => X.Contains("VBR_BEAM_A0")).ToList();
+                                    //    D_ATT1 = all.Where(X => X.Contains("SK_BEAM_A0")).ToList();
 
-                                        drg_att_list = all.Where(X => X.Contains("VBR_BEAM_A0")).ToList();
-                                        D_ATT1 = all.Where(X => X.Contains("SK_BEAM_A0")).ToList();
+                                    //}
+                                    //else
+                                    //{
 
-                                    }
-                                    else
-                                    {
-
-                                        drg_att_list = all.Where(X => X.Contains("VBR_BEAM")).ToList();
-                                        D_ATT1 = all.Where(X => X.Contains("SK_BEAM")).ToList();
-                                    }
+                                    //    drg_att_list = all.Where(X => X.Contains("VBR_BEAM")).ToList();
+                                    //    D_ATT1 = all.Where(X => X.Contains("SK_BEAM")).ToList();
+                                    //} //COMMENTED 20025/06
                                     drg_att_list.Sort();
                                     D_ATT1.Sort();
                                     D_ATT1.Reverse();
@@ -7007,7 +7008,7 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
 
                                         }
 
-
+                                        //break;
                                     }
                                     my_handler.SaveActiveDrawing();
                                     beam_assembly_drg.PlaceViews();
@@ -7035,7 +7036,7 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
                             }
 
                         }
-                        catch
+                        catch(Exception e)
                         {
                             try
                             {
@@ -7046,7 +7047,7 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
                                 mymodel.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
                                 mymodel.CommitChanges();
                                 errct++;
-                                DRG_REMARK = " Error.";
+                                DRG_REMARK = " Error."+e.Message;
                                 SKDrawings.Contains(assembly_pos.ToUpper());
                                 span = DateTime.Now.Subtract(start_assy_tm);
                                 //dgvlog.Rows.Add(assembly_pos, span.Minutes.ToString() + "m " + span.Seconds.ToString() + "s" + DRG_REMARK);
