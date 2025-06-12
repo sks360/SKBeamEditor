@@ -214,7 +214,7 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
                             bool check_for_numbering = assembly_pos.Contains('?');
                             if (check_for_numbering == false)
                             {
-                                if (SKDrawings.Contains(assembly_pos.ToUpper()) == false)
+                                if (!SKDrawings.Contains(assembly_pos.ToUpper()))
                                 {
 
                                     s_tm = DateTime.Now;
@@ -3809,9 +3809,11 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
                                                                             TSD.StraightDimensionSetHandler dim = new TSD.StraightDimensionSetHandler();
                                                                             try
                                                                             {
-                                                                                double distance1 = Math.Abs(Math.Abs(mypt_final[0].Y) - Math.Abs(miny));
-                                                                                dim.CreateDimensionSet(current_view, mypt_final, MYVECTOR, distance1 + 150, fixed_attributes);
-
+                                                                                if (dim != null)
+                                                                                {
+                                                                                    double distance1 = Math.Abs(Math.Abs(mypt_final[0].Y) - Math.Abs(miny));
+                                                                                    dim.CreateDimensionSet(current_view, mypt_final, MYVECTOR, distance1 + 150, fixed_attributes);
+                                                                                }
                                                                             }
                                                                             catch
                                                                             {
@@ -3819,9 +3821,11 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
 
                                                                             try
                                                                             {
-                                                                                double distance1 = Math.Abs(Math.Abs(mypt_finalFOR_LEG[0].X) - Math.Abs(maxx));
-                                                                                dim.CreateDimensionSet(current_view, mypt_finalFOR_LEG, MYVECTOR, distance1 + 150, fixed_attributes);
-
+                                                                                if (dim != null)
+                                                                                {
+                                                                                    double distance1 = Math.Abs(Math.Abs(mypt_finalFOR_LEG[0].X) - Math.Abs(maxx));
+                                                                                    dim.CreateDimensionSet(current_view, mypt_finalFOR_LEG, MYVECTOR, distance1 + 150, fixed_attributes);
+                                                                                }
                                                                             }
                                                                             catch
                                                                             {
@@ -3838,8 +3842,10 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
                                                                                 pt_lit_for_angle.Add(new TSG.Point(0, h1, 0));
 
                                                                                 double distance1 = Math.Abs(Math.Abs(mypt_finalFOR_LEG[0].X) - Math.Abs(maxx));
-                                                                                dim.CreateDimensionSet(current_view, pt_lit_for_angle, MYVECTOR, distance1 + 200, fixed_attributes);
-
+                                                                                if (dim != null)
+                                                                                {
+                                                                                    dim.CreateDimensionSet(current_view, pt_lit_for_angle, MYVECTOR, distance1 + 200, fixed_attributes);
+                                                                                }
                                                                             }
                                                                             catch
                                                                             {
@@ -7018,7 +7024,8 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
                                     mymodel.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
                                     mymodel.CommitChanges();
                                     DRG_REMARK = "Created";
-                                    SKDrawings.Contains(assembly_pos.ToUpper());
+                                    SKDrawings.Add(assembly_pos.ToUpper());
+                                    //SKDrawings.Contains(assembly_pos.ToUpper());
                                     span = DateTime.Now.Subtract(start_assy_tm);
                                     //dgvlog.Rows.Add(assembly_pos, span.Minutes.ToString() + "m " + span.Seconds.ToString() + "s" + DRG_REMARK);            
                                     DataGridViewRow MyRow = dgvlog.Rows[dgvlog.Rows.Add()];
@@ -7048,7 +7055,8 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
                                 mymodel.CommitChanges();
                                 errct++;
                                 DRG_REMARK = " Error."+e.Message;
-                                SKDrawings.Contains(assembly_pos.ToUpper());
+                                // SKDrawings.Contains(assembly_pos.ToUpper());
+                                SKDrawings.Add(assembly_pos.ToUpper());
                                 span = DateTime.Now.Subtract(start_assy_tm);
                                 //dgvlog.Rows.Add(assembly_pos, span.Minutes.ToString() + "m " + span.Seconds.ToString() + "s" + DRG_REMARK);
 
@@ -7092,7 +7100,8 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
                                 assymark = assymark  + "\n" + dataGridViewRow.Cells["drgmark"].Value.ToString();          
                       
                         }
-                        skWinLib.accesslog(skApplicationName, skApplicationVersion, "Create_BeamDrawings" , assymark, "", "");
+                        Console.WriteLine(assymark);
+                        //skWinLib.accesslog(skApplicationName, skApplicationVersion, "Create_BeamDrawings" , assymark, "", "");
                         mymodel.CommitChanges();
                     }                    
                     MessageBox.Show("AUTOMATION COMPLETED");
@@ -12357,11 +12366,14 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
             }
             try
             {
-                TSD.DrawingObjectEnumerator weld_marks = bottom_view.GetAllObjects(type_for_weld);
-                while (weld_marks.MoveNext())
+                if (bottom_view != null)
                 {
-                    var weldmark = weld_marks.Current;
-                    weldmark.Delete();
+                    TSD.DrawingObjectEnumerator weld_marks = bottom_view.GetAllObjects(type_for_weld);
+                    while (weld_marks.MoveNext())
+                    {
+                        var weldmark = weld_marks.Current;
+                        weldmark.Delete();
+                    }
                 }
             }
             catch
@@ -12369,11 +12381,14 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
             }
             try
             {
-                TSD.DrawingObjectEnumerator weld_marks = bottom_view1.GetAllObjects(type_for_weld);
-                while (weld_marks.MoveNext())
+                if (bottom_view1 != null)
                 {
-                    var weldmark = weld_marks.Current;
-                    weldmark.Delete();
+                    TSD.DrawingObjectEnumerator weld_marks = bottom_view1.GetAllObjects(type_for_weld);
+                    while (weld_marks.MoveNext())
+                    {
+                        var weldmark = weld_marks.Current;
+                        weldmark.Delete();
+                    }
                 }
             }
             catch
@@ -13663,7 +13678,10 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
                             TSD.PointList point_for_33_dim = new TSD.PointList();
                             //////////Getting point matrix for each bolt array/////////////
                             TSG.Point[,] point_matrix = Get_Bolt_properties_matrix_for_gusset(boltarray, current_view, "x_asc");
-
+                            if(point_matrix == null)
+                            {
+                                continue;
+                            }
                             int c = point_matrix.GetLength(0);
                             int d = point_matrix.GetLength(1);
 
@@ -20083,8 +20101,16 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
                             foreach (TSG.Point pt in model_bolt.BoltPositions)
                             {
                                 list_for_stud_dim.Add(toviewmatrix.Transform(pt));
-                                Guid ID = plate.Identifier.GUID;
-                                PARTMARK_TO_RETAIN.Add(ID);
+                                if (plate != null)
+                                {
+                                    Guid ID = plate.Identifier.GUID;
+                                    PARTMARK_TO_RETAIN.Add(ID);
+                                }
+                                else
+                                {
+                                    Guid ID = model_bolt.Identifier.GUID;
+                                    PARTMARK_TO_RETAIN.Add(ID);
+                                }
                             }
                         }
 
