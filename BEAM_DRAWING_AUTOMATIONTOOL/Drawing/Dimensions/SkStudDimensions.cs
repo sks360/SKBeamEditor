@@ -69,8 +69,17 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                             foreach (TSG.Point pt in model_bolt.BoltPositions)
                             {
                                 list_for_stud_dim.Add(toviewmatrix.Transform(pt));
-                                Guid ID = plate.Identifier.GUID;
-                                PARTMARK_TO_RETAIN.Add(ID);
+                                if (plate != null)
+                                {
+                                    Guid ID = plate.Identifier.GUID;
+                                    PARTMARK_TO_RETAIN.Add(ID);
+                                }
+                                //should this be the case only when plate is null???
+                                else if(model_bolt != null)
+                                {
+                                    Guid ID = model_bolt.Identifier.GUID;
+                                    PARTMARK_TO_RETAIN.Add(ID);
+                                }
                             }
                         }
 

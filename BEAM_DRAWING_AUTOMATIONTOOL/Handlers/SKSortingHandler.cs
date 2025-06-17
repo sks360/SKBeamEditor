@@ -156,15 +156,76 @@ namespace SK.Tekla.Drawing.Automation.Handlers
         }
 
 
-        //public TSD.PointList SortPoints(ArrayList arrayList, SortBy sortBy = SortBy.X,
-        //  SortOrder sortOrder = SortOrder.Ascending)
-        //{
-        //    var points = ArrayListConverter.ToPointEnumerable(arrayList);
-        //    if (points == null)
-        //        throw new ArgumentNullException("Points or view cannot be null.");
-
-        //    return SortPoints(points.ToList(), sortBy, sortOrder);
-        //}
+        public void SortPoints(ArrayList pointArray, SortBy sortBy = SortBy.X,
+          SortOrder sortOrder = SortOrder.Ascending)
+        {
+            if (sortBy == SortBy.X)
+            {
+                if (sortOrder == SortOrder.Ascending)
+                {
+                    for (int i = 0; i < pointArray.Count; i++)
+                    {
+                        for (int j = 0; j < pointArray.Count; j++)
+                        {
+                            if ((pointArray[i] as TSG.Point).X < (pointArray[j] as TSG.Point).X)
+                            {
+                                TSG.Point temp_point = (pointArray[i] as TSG.Point);
+                                pointArray[i] = pointArray[j];
+                                pointArray[j] = temp_point;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < pointArray.Count; i++)
+                    {
+                        for (int j = 0; j < pointArray.Count; j++)
+                        {
+                            if ((pointArray[i] as TSG.Point).X > (pointArray[j] as TSG.Point).X)
+                            {
+                                TSG.Point temp_point = (pointArray[i] as TSG.Point);
+                                pointArray[i] = pointArray[j];
+                                pointArray[j] = temp_point;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (sortOrder == SortOrder.Ascending)
+                {
+                    for (int i = 0; i < pointArray.Count; i++)
+                    {
+                        for (int j = 0; j < pointArray.Count; j++)
+                        {
+                            if ((pointArray[i] as TSG.Point).Y < (pointArray[j] as TSG.Point).Y)
+                            {
+                                TSG.Point temp_point = (pointArray[i] as TSG.Point);
+                                pointArray[i] = pointArray[j];
+                                pointArray[j] = temp_point;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < pointArray.Count; i++)
+                    {
+                        for (int j = 0; j < pointArray.Count; j++)
+                        {
+                            if ((pointArray[i] as TSG.Point).Y > (pointArray[j] as TSG.Point).Y)
+                            {
+                                TSG.Point temp_point = (pointArray[i] as TSG.Point);
+                                pointArray[i] = pointArray[j];
+                                pointArray[j] = temp_point;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         public void SortPoints(List<Point> pointsList,
            SortBy sortBy = SortBy.X, SortOrder sortOrder = SortOrder.Ascending)
         {

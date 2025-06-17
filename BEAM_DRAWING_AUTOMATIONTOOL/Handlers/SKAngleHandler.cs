@@ -115,19 +115,19 @@ namespace SK.Tekla.Drawing.Automation.Handlers
         {
             TSM.Model mymodel = new TSM.Model();
             TSG.Matrix toviewmatrix = TSG.MatrixFactory.ToCoordinateSystem(current_view.ViewCoordinateSystem);
-            myreq.RemoveAll(x => x.vectortype.Equals("X"));
+            myreq.RemoveAll(x => x.VectorType.Equals("X"));
             var myreq1 = (from vector in myreq
-                          group vector by vector.vectortype into newlist
+                          group vector by vector.VectorType into newlist
                           select new
                           {
                               vector_type = newlist.Key,
-                              face = newlist.ToList()
+                              Face = newlist.ToList()
                           }).ToList();
             List<TSS.Face> myface_list = new List<TSS.Face>();
 
             for (int h = 0; h < myreq1.Count; h++)
             {
-                myface_list.Add((myreq1[h].face.Find(x => x.area.Equals(myreq1[h].face.Max(y => y.area)))).face);
+                myface_list.Add((myreq1[h].Face.Find(x => x.Area.Equals(myreq1[h].Face.Max(y => y.Area)))).Face);
             }
             List<TSG.Point> list1 = new List<TSG.Point>();
             List<TSG.Point> list2 = new List<TSG.Point>();

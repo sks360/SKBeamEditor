@@ -37,7 +37,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
         private readonly SKSortingHandler sortingHandler;
 
-        private readonly FacePointHandler facePointHandler;
+        private readonly SKFacePointHandler facePointHandler;
 
         private readonly SKDrawingHandler drawingHandler;
 
@@ -48,7 +48,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
         public AttachmentDimension(SKCatalogHandler catalogHandler, 
             BoltMatrixHandler boltMatrixHandler, SKBoundingBoxHandler boundingBoxHandler,
             SKSortingHandler sortingHandler,
-            FacePointHandler facePointHandler,
+            SKFacePointHandler facePointHandler,
              SKDrawingHandler drawingHandler, DuplicateRemover duplicateRemover, CustomInputModel userInput)
         {
             this.catalogHandler = catalogHandler;
@@ -66,91 +66,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
         }
 
 
-        public void Dimensions_for_attachments_for_inside_flange(TSM.Beam main_part, TSD.View current_view)
-        {
-            List<double> catalog_values = catalogHandler.Getcatalog_values(main_part);
-            double top_front;
-            ///////////////////Values based on which gusset plates are filtered, Outside flange or Web based on view type///////////////////
-            if (current_view.ViewType.Equals(TSD.View.ViewTypes.FrontView))
-            {
-
-
-                top_front = (catalog_values[0]);
-            }
-            else
-            {
-                top_front = (catalog_values[1]);
-            }
-
-            Type[] type_forplate = new Type[] { typeof(TSM.Beam), typeof(TSM.ContourPlate) };
-            TSM.Model model = new TSM.Model();
-            TSD.DrawingHandler drg_handler = new TSD.DrawingHandler();
-            TSD.StraightDimensionSetHandler dim_set_handler = new TSD.StraightDimensionSetHandler();
-            TSD.PointList ptlist_for_attachments_top = new TSD.PointList();
-            ptlist_for_attachments_top.Add(new TSG.Point(0, 0, 0));
-            TSD.PointList ptlist_for_attachments_bottom = new TSD.PointList();
-            ptlist_for_attachments_bottom.Add(new TSG.Point(0, 0, 0));
-            TSD.DrawingObjectEnumerator enum_for_parts_drg = current_view.GetAllObjects(typeof(TSD.Part));
-
-            while (enum_for_parts_drg.MoveNext())
-            {
-                TSD.Part mypart = enum_for_parts_drg.Current as TSD.Part;
-
-                TSM.Part plate = new TSM.Model().SelectModelObject(mypart.ModelIdentifier) as TSM.Part;
-
-
-                string prof_type = "";
-
-                plate.GetReportProperty("PROFILE_TYPE", ref prof_type);
-                //////////////////////////////////Filtering all the plates////////////////////////////////
-
-                TSD.PointList bounding_box_x = boundingBoxHandler.BoundingBoxSort(plate, current_view);
-                TSD.PointList bounding_box_y = boundingBoxHandler.BoundingBoxSort(plate, current_view, SortBy.Y);
-                model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.ViewCoordinateSystem));
-                TSG.Vector x_vec_of_plate = plate.GetCoordinateSystem().AxisX;
-                TSG.Vector y_vec_of_plate = plate.GetCoordinateSystem().AxisY;
-                TSG.Vector z_vec_of_plate = x_vec_of_plate.Cross(y_vec_of_plate);
-                model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
-                string profile = plate.Profile.ProfileString;
-
-
-
-
-
-
-                if (((prof_type == "B") && (z_vec_of_plate.X != 0)) || (prof_type == "L"))
-                {
-
-                    if (((Convert.ToInt64(bounding_box_y[0].Y) >= -Convert.ToInt64(top_front / 2))) && ((Convert.ToInt64(bounding_box_y[1].Y) <= Convert.ToInt64(top_front / 2))))
-                    {
-                        ptlist_for_attachments_top.Add(bounding_box_x[0]);
-                    }
-                }
-
-
-            }
-
-
-            try
-            {
-                TSD.StraightDimensionSet.StraightDimensionSetAttributes RD = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                RD.DimensionType = TSD.DimensionSetBaseAttributes.DimensionTypes.USAbsolute2;
-                RD.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                RD.Color = DrawingColors.Gray70;
-                RD.Text.Font.Color = DrawingColors.Gray70;
-                RD.Arrowhead.Head = ArrowheadTypes.FilledArrow;
-                dim_set_handler.CreateDimensionSet(current_view as TSD.ViewBase, ptlist_for_attachments_top, new TSG.Vector(0, 1, 0), Math.Abs(current_view.RestrictionBox.MaxPoint.Y + 300), RD);
-            }
-            catch
-            {
-            }
-            //dim_set_handler.CreateDimensionSet(current_view as TSD.ViewBase, ptlist_for_attachments_bottom, new TSG.Vector(0, -1, 0), 500);
-
-
-        }
-
-
-        public void Dimensions_for_attachments_for_inside_flange_front(TSM.Beam main_part, TSD.View current_view, double output, ref List<Guid> PARTMARK_TO_RETAIN, string drg_att)
+        public void CreateDimensionInsideFlangeFront(TSM.Beam main_part, TSD.View current_view, double output, ref List<Guid> PARTMARK_TO_RETAIN, string drg_att)
         {
 
             TSD.StraightDimensionSet.StraightDimensionSetAttributes RDATT = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
@@ -225,13 +141,15 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                     {
 
 
-                        if (((prof_type == "B") && (z_vec_of_plate.X != 0)) || ((prof_type == "T") && ((x_vec_of_plate.X != 0))) || ((prof_type == "U") && ((y_vec_of_plate.Y != 0))))
+                        if (((prof_type == "B") && (z_vec_of_plate.X != 0)) || 
+                            ((prof_type == "T") && ((x_vec_of_plate.X != 0))) || 
+                            ((prof_type == "U") && ((y_vec_of_plate.Y != 0))))
                         {
 
 
                             if (prof_type == "T")
                             {
-                                ptlist_for_attachments_top.Add(facePointHandler.Get_face_point(plate, current_view));
+                                ptlist_for_attachments_top.Add(facePointHandler.GetFacePoint(plate, current_view));
                                 Guid ID = plate.Identifier.GUID;
                                 PARTMARK_TO_RETAIN.Add(ID);
                             }
@@ -292,7 +210,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                                     model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
 
 
-                                                    TSG.Point pz = drawingHandler.converted_points_FOR_CHANNEL(model, new TSG.Point(0, 0, 0), mw as TSM.Beam, current_view);
+                                                    TSG.Point pz = drawingHandler.ConvertedPointsForChannel(model, current_view);
 
 
                                                     x_value = pz.X;
@@ -360,7 +278,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                                     model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
 
 
-                                                    TSG.Point pz = drawingHandler.converted_points_FOR_CHANNEL(model, new TSG.Point(0, 0, 0), mw1 as TSM.Beam, current_view);
+                                                    TSG.Point pz = drawingHandler.ConvertedPointsForChannel(model, current_view);
 
 
                                                     x_value = pz.X;
@@ -409,17 +327,13 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                     }
 
                                 }
-                                else
-                                {
-
-                                }
                             }
 
 
 
                             else
                             {
-                                TSG.Point face_point_for_angle_bswelded = facePointHandler.Get_face_point_for_angle_bothside_weldedlogic(plate, current_view);
+                                TSG.Point face_point_for_angle_bswelded = facePointHandler.GetFacePointForAngleBothsideWeldedLogic(plate, current_view);
                                 ptlist_for_attachments_top.Add(new TSG.Point(face_point_for_angle_bswelded.X, bounding_box_y[1].Y, bounding_box_y[0].Z));
                                 Guid ID = plate.Identifier.GUID;
                                 PARTMARK_TO_RETAIN.Add(ID);
@@ -445,13 +359,13 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                             }
                             else
                             {
-                                string angle_dim = check_for_angle_dim(plate, current_view);
+                                string angle_dim = CheckAngleDimensionNeeded(plate, current_view);
 
                                 if (angle_dim == "NEED")
                                 {
 
-                                    List<AngleFaceArea> myreq = facePointHandler.getface_for_angle(plate);
-                                    TSG.Point midpt_of_angle = angle_mid_pt(myreq, current_view);
+                                    List<AngleFaceArea> myreq = facePointHandler.GetFaceAreasForAngle(plate);
+                                    TSG.Point midpt_of_angle = FindAngleMidPoint(myreq, current_view);
                                     ptlist_for_attachments_top.Add(midpt_of_angle);
                                     Guid ID = plate.Identifier.GUID;
                                     PARTMARK_TO_RETAIN.Add(ID);
@@ -462,276 +376,13 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
                                     list_of_angle.Add(plate);
 
-
-
-
-                                    #region angle_3.5_dim
-
-                                    //if ((profile_type == "U") && (Convert.ToInt64(angle_coord.AxisY.Y) == 0))
-                                    //{
-                                    //    model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.DisplayCoordinateSystem));
-                                    //    TSG.Vector zvector = main_part.GetCoordinateSystem().AxisX.Cross(main_part.GetCoordinateSystem().AxisY);
-
-                                    //    model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
-
-                                    //    zvector.Normalize();
-                                    //    double WT = 0;
-
-
-                                    //    double WT2 = (catalog_values[1]);
-                                    //    if (zvector.Y > 0)
-                                    //    {
-                                    //        WT = (-WT2 / 2);
-                                    //    }
-                                    //    else
-                                    //    {
-                                    //        WT = (WT2 / 2);
-                                    //    }
-
-                                    //    if (Convert.ToInt64(bounding_box_x[0].X) >= Convert.ToInt64(WT))
-                                    //    {
-                                    //        TSG.Point p1 = new TSG.Point();
-                                    //        p1 = new TSG.Point(bounding_box_y[1].X, bounding_box_y[0].Y, 0);
-                                    //        TSG.Point p2 = new TSG.Point();
-                                    //        p2 = new TSG.Point(bounding_box_y[0].X, bounding_box_y[0].Y, 0);
-                                    //        if (bounding_box_x[1].X > output)
-                                    //        {
-                                    //            angle_3_5_dim.Add(p2);
-                                    //            angle_3_5_dim.Add(p1);
-                                    //            Guid ID = plate.Identifier.GUID;
-                                    //            PARTMARK_TO_RETAIN.Add(ID);
-
-
-                                    //        }
-                                    //        else
-                                    //        {
-                                    //            angle_3_5_dim.Add(p1);
-                                    //            angle_3_5_dim.Add(p2);
-                                    //            Guid ID = plate.Identifier.GUID;
-                                    //            PARTMARK_TO_RETAIN.Add(ID);
-                                    //        }
-                                    //        double dist = Math.Abs(current_view.RestrictionBox.MaxPoint.Y) - Math.Abs(angle_3_5_dim[0].Y);
-                                    //        TSD.StraightDimensionSetHandler dim_for_3_5 = new TSD.StraightDimensionSetHandler();
-                                    //        TSD.StraightDimensionSet.StraightDimensionSetAttributes att = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                                    //        att.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                                    //        att.ExtensionLine = TSD.DimensionSetBaseAttributes.ExtensionLineTypes.No;
-                                    //        try
-                                    //        {
-                                    //            dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, new TSG.Vector(0, -1, 0), dist + 50 + Math.Abs(WT), att);
-                                    //        }
-                                    //        catch
-                                    //        {
-                                    //        }
-                                    //    }
-                                    //    if (Convert.ToInt64(bounding_box_x[1].X) <= Convert.ToInt64(WT))
-                                    //    {
-                                    //        TSG.Point p1 = new TSG.Point();
-                                    //        p1 = new TSG.Point(bounding_box_y[1].X, bounding_box_y[1].Y, 0);
-                                    //        TSG.Point p2 = new TSG.Point();
-                                    //        p2 = new TSG.Point(bounding_box_y[0].X, bounding_box_y[1].Y, 0);
-                                    //        if (bounding_box_x[1].X > output)
-                                    //        {
-                                    //            angle_3_5_dim.Add(p2);
-                                    //            angle_3_5_dim.Add(p1);
-                                    //            Guid ID = plate.Identifier.GUID;
-                                    //            PARTMARK_TO_RETAIN.Add(ID);
-
-
-                                    //        }
-                                    //        else
-                                    //        {
-                                    //            angle_3_5_dim.Add(p1);
-                                    //            angle_3_5_dim.Add(p2);
-                                    //            Guid ID = plate.Identifier.GUID;
-                                    //            PARTMARK_TO_RETAIN.Add(ID);
-                                    //        }
-                                    //        double dist = Math.Abs(current_view.RestrictionBox.MinPoint.Y) - Math.Abs(angle_3_5_dim[0].Y);
-                                    //        TSD.StraightDimensionSetHandler dim_for_3_5 = new TSD.StraightDimensionSetHandler();
-                                    //        TSD.StraightDimensionSet.StraightDimensionSetAttributes att = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                                    //        att.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                                    //        att.ExtensionLine = TSD.DimensionSetBaseAttributes.ExtensionLineTypes.No;
-                                    //        try
-                                    //        {
-                                    //            dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, new TSG.Vector(0, -1, 0), dist + 50 + Math.Abs(WT), att);
-                                    //        }
-                                    //        catch
-                                    //        {
-                                    //        }
-                                    //    }
-
-
-
-                                    //    else if (Convert.ToInt64(bounding_box_x[0].X) <= Convert.ToInt64(WT))
-                                    //    {
-                                    //        TSG.Point p1 = new TSG.Point();
-                                    //        p1 = new TSG.Point(bounding_box_y[1].X, bounding_box_y[0].Y, 0);
-                                    //        TSG.Point p2 = new TSG.Point();
-                                    //        p2 = new TSG.Point(bounding_box_y[0].X, bounding_box_y[0].Y, 0);
-                                    //        if (bounding_box_x[1].X > output)
-                                    //        {
-                                    //            angle_3_5_dim.Add(p2);
-                                    //            angle_3_5_dim.Add(p1);
-                                    //            Guid ID = plate.Identifier.GUID;
-                                    //            PARTMARK_TO_RETAIN.Add(ID);
-
-
-                                    //        }
-                                    //        else
-                                    //        {
-                                    //            angle_3_5_dim.Add(p1);
-                                    //            angle_3_5_dim.Add(p2);
-                                    //            Guid ID = plate.Identifier.GUID;
-                                    //            PARTMARK_TO_RETAIN.Add(ID);
-                                    //        }
-                                    //        double dist = Math.Abs(current_view.RestrictionBox.MaxPoint.Y) - Math.Abs(angle_3_5_dim[0].Y);
-                                    //        TSD.StraightDimensionSetHandler dim_for_3_5 = new TSD.StraightDimensionSetHandler();
-                                    //        TSD.StraightDimensionSet.StraightDimensionSetAttributes att = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                                    //        att.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                                    //        att.ExtensionLine = TSD.DimensionSetBaseAttributes.ExtensionLineTypes.No;
-                                    //        try
-                                    //        {
-                                    //            dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, new TSG.Vector(0, -1, 0), dist + 50 + Math.Abs(WT), att);
-                                    //        }
-                                    //        catch
-                                    //        {
-                                    //        }
-                                    //    }
-                                    //}
-
-                                    //else if ((Convert.ToInt64(angle_coord.AxisY.Y) == 0))
-                                    //{
-                                    //    if (Convert.ToInt64(bounding_box_x[0].X) > 0)
-                                    //    {
-                                    //        TSG.Point p1 = new TSG.Point();
-                                    //        p1 = new TSG.Point(bounding_box_y[1].X, bounding_box_y[0].Y, 0);
-                                    //        TSG.Point p2 = new TSG.Point();
-                                    //        p2 = new TSG.Point(bounding_box_y[0].X, bounding_box_y[0].Y, 0);
-
-                                    //        if (bounding_box_x[1].X > output)
-                                    //        {
-                                    //            angle_3_5_dim.Add(p2);
-                                    //            angle_3_5_dim.Add(p1);
-                                    //            Guid ID = plate.Identifier.GUID;
-                                    //            PARTMARK_TO_RETAIN.Add(ID);
-
-
-                                    //        }
-                                    //        else
-                                    //        {
-                                    //            angle_3_5_dim.Add(p1);
-                                    //            angle_3_5_dim.Add(p2);
-                                    //            Guid ID = plate.Identifier.GUID;
-                                    //            PARTMARK_TO_RETAIN.Add(ID);
-                                    //        }
-                                    //        List<TSG.Point> allpts_in_angle = pts_in_each_face(plate, current_view);
-                                    //        TSG.Point p11 = allpts_in_angle.Find(x => (x.X.Equals(allpts_in_angle.Min(y => y.X))) && (x.Y.Equals(allpts_in_angle.Min(y => y.Y))));
-                                    //        TSG.Point p21 = allpts_in_angle.Find(x => (x.X.Equals(allpts_in_angle.Max(y => y.X))) && (x.Y.Equals(allpts_in_angle.Min(y => y.Y))));
-
-                                    //        double dist = Math.Abs(current_view.RestrictionBox.MaxPoint.Y) - Math.Abs(angle_3_5_dim[0].Y);
-                                    //        TSD.StraightDimensionSetHandler dim_for_3_5 = new TSD.StraightDimensionSetHandler();
-                                    //        TSD.StraightDimensionSet.StraightDimensionSetAttributes att = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                                    //        att.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                                    //        att.ExtensionLine = TSD.DimensionSetBaseAttributes.ExtensionLineTypes.No;
-
-                                    //        try
-                                    //        {
-
-                                    //            dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, new TSG.Vector(0, -1, 0), dist + 50, att);
-                                    //            //dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, x_axis, dist + 50, att);
-                                    //        }
-                                    //        catch
-                                    //        {
-                                    //        }
-                                    //    }
-                                    //    else if (Convert.ToInt64(bounding_box_x[1].X) < 0)
-                                    //    {
-                                    //        TSG.Point p1 = new TSG.Point();
-                                    //        p1 = new TSG.Point(bounding_box_y[1].X, bounding_box_y[1].Y, 0);
-                                    //        TSG.Point p2 = new TSG.Point();
-                                    //        p2 = new TSG.Point(bounding_box_y[0].X, bounding_box_y[1].Y, 0);
-                                    //        if (bounding_box_x[1].X > output)
-                                    //        {
-                                    //            angle_3_5_dim.Add(p2);
-                                    //            angle_3_5_dim.Add(p1);
-                                    //            Guid ID = plate.Identifier.GUID;
-                                    //            PARTMARK_TO_RETAIN.Add(ID);
-
-
-                                    //        }
-                                    //        else
-                                    //        {
-                                    //            angle_3_5_dim.Add(p1);
-                                    //            angle_3_5_dim.Add(p2);
-                                    //            Guid ID = plate.Identifier.GUID;
-                                    //            PARTMARK_TO_RETAIN.Add(ID);
-                                    //        }
-                                    //        double dist = Math.Abs(current_view.RestrictionBox.MinPoint.Y) - Math.Abs(angle_3_5_dim[0].Y);
-                                    //        TSD.StraightDimensionSetHandler dim_for_3_5 = new TSD.StraightDimensionSetHandler();
-                                    //        TSD.StraightDimensionSet.StraightDimensionSetAttributes att = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                                    //        att.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                                    //        att.ExtensionLine = TSD.DimensionSetBaseAttributes.ExtensionLineTypes.No;
-                                    //        try
-                                    //        {
-                                    //            dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, new TSG.Vector(0, -1, 0), dist + 50, att);
-                                    //            //dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, x_axis, dist + 50, att);
-                                    //        }
-                                    //        catch
-                                    //        {
-                                    //        }
-                                    //    }
-
-                                    //    else if (Convert.ToInt64(bounding_box_x[0].X) < 0)
-                                    //    {
-                                    //        TSG.Point p1 = new TSG.Point();
-                                    //        p1 = new TSG.Point(bounding_box_y[1].X, bounding_box_y[0].Y, 0);
-                                    //        TSG.Point p2 = new TSG.Point();
-                                    //        p2 = new TSG.Point(bounding_box_y[0].X, bounding_box_y[0].Y, 0);
-
-                                    //        if (bounding_box_x[1].X > output)
-                                    //        {
-                                    //            angle_3_5_dim.Add(p2);
-                                    //            angle_3_5_dim.Add(p1);
-                                    //            Guid ID = plate.Identifier.GUID;
-                                    //            PARTMARK_TO_RETAIN.Add(ID);
-
-
-                                    //        }
-                                    //        else
-                                    //        {
-                                    //            angle_3_5_dim.Add(p1);
-                                    //            angle_3_5_dim.Add(p2);
-                                    //            Guid ID = plate.Identifier.GUID;
-                                    //            PARTMARK_TO_RETAIN.Add(ID);
-                                    //        }
-                                    //        double dist = Math.Abs(current_view.RestrictionBox.MaxPoint.Y) - Math.Abs(angle_3_5_dim[0].Y);
-                                    //        TSD.StraightDimensionSetHandler dim_for_3_5 = new TSD.StraightDimensionSetHandler();
-                                    //        TSD.StraightDimensionSet.StraightDimensionSetAttributes att = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                                    //        att.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                                    //        att.ExtensionLine = TSD.DimensionSetBaseAttributes.ExtensionLineTypes.No;
-
-                                    //        try
-                                    //        {
-                                    //            dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, new TSG.Vector(0, -1, 0), dist + 50, att);
-                                    //            //dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, x_axis, dist + 50, att);
-                                    //        }
-                                    //        catch
-                                    //        {
-                                    //        }
-                                    //    }
-                                    //}
-
-
+                                    #region angle_3.5_dim removed
                                     #endregion
-
                                 }
 
                             }
 
                         }
-                        else if (prof_type == "Z")
-                        {
-                        }
-
                     }
                 }
             }
@@ -780,7 +431,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                     }
                 }
             }
-            TSD.PointList final_ptlist_for_attachments_top = duplicateRemover.pointlist_remove_duplicate_Xvalues(pt_list_z_positive);
+            TSD.PointList final_ptlist_for_attachments_top = duplicateRemover.RemoveDuplicateXValues(pt_list_z_positive);
             final_ptlist_for_attachments_top.Add(new TSG.Point(0, 0, 0));
             sortingHandler.SortPoints(final_ptlist_for_attachments_top);
             double MAXY = Math.Abs(current_view.RestrictionBox.MaxPoint.Y);
@@ -944,7 +595,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
         }
 
-        public void Dimensions_for_attachments_for_inside_flange_top(TSM.Beam main_part, TSD.View current_view, double output, ref List<Guid> PARTMARK_TO_RETAIN, string drg_att)
+        public void CreateDimensionInsideFlangeTop(TSM.Beam main_part, TSD.View current_view, double output, ref List<Guid> PARTMARK_TO_RETAIN, string drg_att)
         {
             TSD.StraightDimensionSet.StraightDimensionSetAttributes dim_font_height = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
             dim_font_height.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
@@ -1025,7 +676,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
                             if (prof_type == "T")
                             {
-                                ptlist_for_attachments_top.Add(facePointHandler.Get_face_point(plate, current_view));
+                                ptlist_for_attachments_top.Add(facePointHandler.GetFacePoint(plate, current_view));
                                 Guid ID = plate.Identifier.GUID;
                                 PARTMARK_TO_RETAIN.Add(ID);
                             }
@@ -1033,7 +684,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
                             else if (prof_type == "U")
                             {
-                                ptlist_for_attachments_top.Add(facePointHandler.Get_face_point(plate, current_view));
+                                ptlist_for_attachments_top.Add(facePointHandler.GetFacePoint(plate, current_view));
                                 Guid ID = plate.Identifier.GUID;
                                 PARTMARK_TO_RETAIN.Add(ID);
                             }
@@ -1094,7 +745,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                                     model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
 
 
-                                                    TSG.Point pz = drawingHandler.converted_points_FOR_CHANNEL(model, new TSG.Point(0, 0, 0), mw as TSM.Beam, current_view);
+                                                    TSG.Point pz = drawingHandler.ConvertedPointsForChannel(model, current_view);
 
 
                                                     x_value = pz.X;
@@ -1165,7 +816,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                                     model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
 
 
-                                                    TSG.Point pz = drawingHandler.converted_points_FOR_CHANNEL(model, new TSG.Point(0, 0, 0), mw1 as TSM.Beam, current_view);
+                                                    TSG.Point pz = drawingHandler.ConvertedPointsForChannel(model,  current_view);
 
 
                                                     x_value = pz.X;
@@ -1218,7 +869,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                     int a = platebolts.GetSize();
                                     if (a > 0)
                                     {
-                                        List<TSG.Point> p1_yasc = facePointHandler.Get_face_point_for_plate_test(plate, current_view);
+                                        List<TSG.Point> p1_yasc = facePointHandler.GetFacePointsForPlateTest(plate, current_view);
                                         List<TSG.Point> p_x_asc = new List<TSG.Point>();
                                         foreach (TSG.Point mypoint in p1_yasc)
                                         {
@@ -1301,7 +952,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                     }
                                     else
                                     {
-                                        List<TSG.Point> p1_yasc = facePointHandler.Get_face_point_for_plate_test(plate, current_view);
+                                        List<TSG.Point> p1_yasc = facePointHandler.GetFacePointsForPlateTest(plate, current_view);
                                         List<TSG.Point> p_x_asc = new List<TSG.Point>();
                                         foreach (TSG.Point mypoint in p1_yasc)
                                         {
@@ -1454,7 +1105,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                             //                    }
 
 
-                            //                    TSG.Point face_point_for_angle_bswelded = facePointHandler.Get_face_point_for_angle_bothside_weldedlogic_top(plate, current_view);
+                            //                    TSG.Point face_point_for_angle_bswelded = facePointHandler.GetFacePoint_for_angle_bothside_weldedlogic_top(plate, current_view);
                             //                    ptlist_for_attachments_top.Add(new TSG.Point(face_point_for_angle_bswelded.X, bounding_box_y[1].Y, bounding_box_y[0].Z));
                             //                    Guid ID = plate.Identifier.GUID;
                             //                    PARTMARK_TO_RETAIN.Add(ID);
@@ -1514,7 +1165,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
                             //                        model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
                             //                    }
-                            //                    TSG.Point face_point_for_angle_bswelded = facePointHandler.Get_face_point_for_angle_bothside_weldedlogic_top(plate, current_view);
+                            //                    TSG.Point face_point_for_angle_bswelded = facePointHandler.GetFacePoint_for_angle_bothside_weldedlogic_top(plate, current_view);
                             //                    ptlist_for_attachments_top.Add(new TSG.Point(face_point_for_angle_bswelded.X, bounding_box_y[1].Y, bounding_box_y[0].Z));
                             //                    Guid ID = plate.Identifier.GUID;
                             //                    PARTMARK_TO_RETAIN.Add(ID);
@@ -1532,7 +1183,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
                             //        else
                             //        {
-                            //            TSG.Point face_point_for_angle_bswelded = facePointHandler.Get_face_point_for_angle_bothside_weldedlogic_top(plate, current_view);
+                            //            TSG.Point face_point_for_angle_bswelded = facePointHandler.GetFacePoint_for_angle_bothside_weldedlogic_top(plate, current_view);
                             //            ptlist_for_attachments_top.Add(new TSG.Point(face_point_for_angle_bswelded.X, bounding_box_y[1].Y, bounding_box_y[0].Z));
                             //            Guid ID = plate.Identifier.GUID;
                             //            PARTMARK_TO_RETAIN.Add(ID);
@@ -1739,7 +1390,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                 int a = platebolts.GetSize();
                                 if (a > 0)
                                 {
-                                    List<TSG.Point> p1_yasc = facePointHandler.Get_face_point_for_plate_test(plate, current_view);
+                                    List<TSG.Point> p1_yasc = facePointHandler.GetFacePointsForPlateTest(plate, current_view);
                                     p1_yasc.Distinct();
                                     List<TSG.Point> p_x_asc = new List<TSG.Point>();
                                     foreach (TSG.Point mypoint in p1_yasc)
@@ -1820,7 +1471,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                 }
                                 else
                                 {
-                                    List<TSG.Point> p1_yasc = facePointHandler.Get_face_point_for_plate_test(plate, current_view);
+                                    List<TSG.Point> p1_yasc = facePointHandler.GetFacePointsForPlateTest(plate, current_view);
                                     p1_yasc.Distinct();
                                     List<TSG.Point> p_x_asc = new List<TSG.Point>();
                                     foreach (TSG.Point mypoint in p1_yasc)
@@ -1892,13 +1543,13 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                     }
                     else
                     {
-                        string angle_dim = check_for_angle_dim(plate, current_view);
+                        string angle_dim = CheckAngleDimensionNeeded(plate, current_view);
 
                         if (angle_dim == "NEED")
                         {
 
-                            List<AngleFaceArea> myreq = facePointHandler.getface_for_angle(plate);
-                            TSG.Point midpt_of_angle = angle_mid_pt(myreq, current_view);
+                            List<AngleFaceArea> myreq = facePointHandler.GetFaceAreasForAngle(plate);
+                            TSG.Point midpt_of_angle = FindAngleMidPoint(myreq, current_view);
                             ptlist_for_attachments_top.Add(midpt_of_angle);
                             Guid ID = plate.Identifier.GUID;
                             PARTMARK_TO_RETAIN.Add(ID);
@@ -1944,7 +1595,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
 
 
-                TSD.PointList final_ptlist_for_attachments_top = duplicateRemover.pointlist_remove_duplicate_Xvalues(pt_list_z_positive);
+                TSD.PointList final_ptlist_for_attachments_top = duplicateRemover.RemoveDuplicateXValues(pt_list_z_positive);
                 final_ptlist_for_attachments_top.Insert(0, (new TSG.Point(0, 0, 0)));
                 sortingHandler.SortPoints(final_ptlist_for_attachments_top);
 
@@ -1966,7 +1617,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
             }
             ///////////////////////////////////END FOR PLATE ///////////////////////////////////////////////////////////////////////////////
         }
-        public void Dimensions_for_attachments_for_outside_flange(TSM.Beam main_part, TSD.View current_view, double output, ref List<Guid> PARTMARK_TO_RETAIN, string drg_att)
+        public void CreateDimensionOutsideFlange(TSM.Beam main_part, TSD.View current_view, double output, ref List<Guid> PARTMARK_TO_RETAIN, string drg_att)
         {
 
 
@@ -2169,7 +1820,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                             model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
 
 
-                                            TSG.Point pz = drawingHandler.converted_points_FOR_CHANNEL(model, new TSG.Point(0, 0, 0), mw as TSM.Beam, current_view);
+                                            TSG.Point pz = drawingHandler.ConvertedPointsForChannel(model,  current_view);
 
 
                                             x_value = pz.X;
@@ -2300,7 +1951,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                             model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
 
 
-                                            TSG.Point pz = drawingHandler.converted_points_FOR_CHANNEL(model, new TSG.Point(0, 0, 0), mw1 as TSM.Beam, current_view);
+                                            TSG.Point pz = drawingHandler.ConvertedPointsForChannel(model, current_view);
 
 
                                             x_value = pz.X;
@@ -2487,7 +2138,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                     //if (angle_dim == "NEED")
                                     //{
 
-                                    //    List<angle_face_area> myreq = facePointHandler.getface_for_angle(plate);
+                                    //    List<angle_face_area> myreq = facePointHandler.GetFaceAreasForAngle(plate);
                                     //    TSG.Point midpt_of_angle = angle_mid_pt(myreq, current_view);
                                     //    ptlist_for_attachments_top.Add(midpt_of_angle);
                                     //    Guid ID = plate.Identifier.GUID;
@@ -2502,12 +2153,12 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                     {
                                         if (Convert.ToInt64(bounding_box_y[0].Y) > 0)
                                         {
-                                            //ptlist_for_attachments_top.Add(facePointHandler.Get_face_point(plate, current_view));
+                                            //ptlist_for_attachments_top.Add(facePointHandler.GetFacePoint(plate, current_view));
                                             //Guid ID = plate.Identifier.GUID;
                                             //PARTMARK_TO_RETAIN.Add(ID);
 
-                                            List<AngleFaceArea> myreq = facePointHandler.getface_for_angle(plate);
-                                            TSG.Point midpt_of_angle = angle_mid_pt(myreq, current_view);
+                                            List<AngleFaceArea> myreq = facePointHandler.GetFaceAreasForAngle(plate);
+                                            TSG.Point midpt_of_angle = FindAngleMidPoint(myreq, current_view);
                                             ptlist_for_attachments_top.Add(midpt_of_angle);
 
                                             //ptlist_for_attachments_top.Add(new TSG.Point(bounding_box_x[0].X, bounding_box_y[0].Y, bounding_box_y[0].Z));
@@ -2517,11 +2168,11 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                         }
                                         else if (Convert.ToInt64(bounding_box_y[0].Y) < 0)
                                         {
-                                            //ptlist_for_attachments_bottom.Add(facePointHandler.Get_face_point(plate, current_view));
+                                            //ptlist_for_attachments_bottom.Add(facePointHandler.GetFacePoint(plate, current_view));
                                             //Guid ID = plate.Identifier.GUID;
                                             //PARTMARK_TO_RETAIN.Add(ID);
-                                            List<AngleFaceArea> myreq = facePointHandler.getface_for_angle(plate);
-                                            TSG.Point midpt_of_angle = angle_mid_pt(myreq, current_view);
+                                            List<AngleFaceArea> myreq = facePointHandler.GetFaceAreasForAngle(plate);
+                                            TSG.Point midpt_of_angle = FindAngleMidPoint(myreq, current_view);
                                             ptlist_for_attachments_bottom.Add(midpt_of_angle);
 
                                             //ptlist_for_attachments_bottom.Add(new TSG.Point(bounding_box_x[0].X, bounding_box_y[0].Y, bounding_box_y[0].Z));
@@ -2547,8 +2198,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                 {
                                     if (Convert.ToInt64(bounding_box_y[0].Y) > 0)
                                     {
-                                        List<AngleFaceArea> myreq = facePointHandler.getface_for_angle(plate);
-                                        TSG.Point midpt_of_angle = angle_mid_pt(myreq, current_view);
+                                        List<AngleFaceArea> myreq = facePointHandler.GetFaceAreasForAngle(plate);
+                                        TSG.Point midpt_of_angle = FindAngleMidPoint(myreq, current_view);
                                         ptlist_for_attachments_top.Add(midpt_of_angle);
 
                                         //ptlist_for_attachments_top.Add(new TSG.Point(bounding_box_x[0].X, bounding_box_y[0].Y, bounding_box_y[0].Z));
@@ -2557,8 +2208,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                     }
                                     else if (Convert.ToInt64(bounding_box_y[0].Y) < 0)
                                     {
-                                        List<AngleFaceArea> myreq = facePointHandler.getface_for_angle(plate);
-                                        TSG.Point midpt_of_angle = angle_mid_pt(myreq, current_view);
+                                        List<AngleFaceArea> myreq = facePointHandler.GetFaceAreasForAngle(plate);
+                                        TSG.Point midpt_of_angle = FindAngleMidPoint(myreq, current_view);
                                         ptlist_for_attachments_bottom.Add(midpt_of_angle);
                                         //ptlist_for_attachments_bottom.Add(new TSG.Point(bounding_box_x[0].X, bounding_box_y[0].Y, bounding_box_y[0].Z));
                                         Guid ID = plate.Identifier.GUID;
@@ -2568,13 +2219,13 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                 }
                                 //if ((Convert.ToInt64(bounding_box_y[0].Y) >= Convert.ToInt64(top_front / 2)))
                                 //{
-                                //    ptlist_for_attachments_top.Add(facePointHandler.Get_face_point(plate, current_view));
+                                //    ptlist_for_attachments_top.Add(facePointHandler.GetFacePoint(plate, current_view));
                                 //    Guid ID = plate.Identifier.GUID;
                                 //    PARTMARK_TO_RETAIN.Add(ID);
                                 //}
                                 //else if ((Convert.ToInt64(bounding_box_y[1].Y) <= -Convert.ToInt64(top_front / 2)))
                                 //{
-                                //    ptlist_for_attachments_bottom.Add(facePointHandler.Get_face_point(plate, current_view));
+                                //    ptlist_for_attachments_bottom.Add(facePointHandler.GetFacePoint(plate, current_view));
                                 //    Guid ID = plate.Identifier.GUID;
                                 //    PARTMARK_TO_RETAIN.Add(ID);
                                 //}
@@ -2757,8 +2408,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                     if (bounding_box_y[0].Y > 0)
                                     {
 
-                                        List<AngleFaceArea> myreq = facePointHandler.getface_for_tprofile(plate);
-                                        TSG.Point midpt_of_angle = facePointHandler.tpro_mid_pt(myreq, current_view);
+                                        List<AngleFaceArea> myreq = facePointHandler.GetFaceAreasForTProfile(plate);
+                                        TSG.Point midpt_of_angle = facePointHandler.GetTProfileMidPoint(myreq, current_view);
 
 
                                         double X = ((bounding_box_y[0].X + bounding_box_y[1].X) / 2);
@@ -2766,15 +2417,15 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
 
 
-                                        //ptlist_for_attachments_top.Add(facePointHandler.Get_face_point_FOR_T(plate, current_view));
+                                        //ptlist_for_attachments_top.Add(facePointHandler.GetFacePoint_FOR_T(plate, current_view));
                                         ptlist_for_attachments_top.Add(midpt_of_angle);
                                         Guid ID = plate.Identifier.GUID;
                                         PARTMARK_TO_RETAIN.Add(ID);
                                     }
                                     else if (bounding_box_y[0].Y < 0)
                                     {
-                                        List<AngleFaceArea> myreq = facePointHandler.getface_for_tprofile(plate);
-                                        TSG.Point midpt_of_angle = facePointHandler.tpro_mid_pt(myreq, current_view);
+                                        List<AngleFaceArea> myreq = facePointHandler.GetFaceAreasForTProfile(plate);
+                                        TSG.Point midpt_of_angle = facePointHandler.GetTProfileMidPoint(myreq, current_view);
 
 
                                         double X = ((bounding_box_y[0].X + bounding_box_y[1].X) / 2);
@@ -2841,8 +2492,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                 if (bounding_box_y[0].Y > 0)
                                 {
 
-                                    List<AngleFaceArea> myreq = facePointHandler.getface_for_CHANNEL(plate);
-                                    TSG.Point midpt_of_angle = facePointHandler.tpro_mid_pt(myreq, current_view);
+                                    List<AngleFaceArea> myreq = facePointHandler.GetFaceAreasForChannel(plate);
+                                    TSG.Point midpt_of_angle = facePointHandler.GetTProfileMidPoint(myreq, current_view);
 
 
                                     double X = ((bounding_box_y[0].X + bounding_box_y[1].X) / 2);
@@ -2850,15 +2501,15 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
 
 
-                                    //ptlist_for_attachments_top.Add(facePointHandler.Get_face_point_FOR_T(plate, current_view));
+                                    //ptlist_for_attachments_top.Add(facePointHandler.GetFacePoint_FOR_T(plate, current_view));
                                     ptlist_for_attachments_top.Add(midpt_of_angle);
                                     Guid ID = plate.Identifier.GUID;
                                     PARTMARK_TO_RETAIN.Add(ID);
                                 }
                                 else if (bounding_box_y[0].Y < 0)
                                 {
-                                    List<AngleFaceArea> myreq = facePointHandler.getface_for_CHANNEL(plate);
-                                    TSG.Point midpt_of_angle = facePointHandler.tpro_mid_pt(myreq, current_view);
+                                    List<AngleFaceArea> myreq = facePointHandler.GetFaceAreasForChannel(plate);
+                                    TSG.Point midpt_of_angle = facePointHandler.GetTProfileMidPoint(myreq, current_view);
 
 
                                     double X = ((bounding_box_y[0].X + bounding_box_y[1].X) / 2);
@@ -2926,8 +2577,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                             }
                             else
                             {
-                                List<AngleFaceArea> myreq = facePointHandler.getface_for_tprofile(plate);
-                                TSG.Point midpt_of_angle = facePointHandler.tpro_mid_pt(myreq, current_view);
+                                List<AngleFaceArea> myreq = facePointHandler.GetFaceAreasForTProfile(plate);
+                                TSG.Point midpt_of_angle = facePointHandler.GetTProfileMidPoint(myreq, current_view);
 
 
 
@@ -3413,367 +3064,13 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
             # endregion
 
         }
-
-        public void Dimensions_for_attachments_for_outside_flange(TSM.Beam main_part, TSD.View current_view)
-        {
-            List<double> catalog_values = catalogHandler.Getcatalog_values(main_part);
-            double top_front;
-            if (current_view.ViewType.Equals(TSD.View.ViewTypes.FrontView))
-
-            ///////////////////Values based on which gusset plates are filtered, Outside flange or Web based on view type///////////////////
-            {
-                top_front = (catalog_values[0]);
-            }
-            else
-            {
-                top_front = (catalog_values[2]);
-            }
-
-            TSM.Model model = new TSM.Model();
-            TSD.DrawingHandler drg_handler = new TSD.DrawingHandler();
-            TSD.StraightDimensionSetHandler dim_set_handler = new TSD.StraightDimensionSetHandler();
-            TSD.PointList ptlist_for_attachments_top = new TSD.PointList();
-            ptlist_for_attachments_top.Add(new TSG.Point(0, 0, 0));
-            TSD.PointList ptlist_for_attachments_bottom = new TSD.PointList();
-            ptlist_for_attachments_bottom.Add(new TSG.Point(0, 0, 0));
-            TSD.DrawingObjectEnumerator enum_for_parts_drg = current_view.GetAllObjects(typeof(TSD.Part));
-
-            while (enum_for_parts_drg.MoveNext())
-            {
-                TSD.Part mypart = enum_for_parts_drg.Current as TSD.Part;
-
-                TSM.Part plate = new TSM.Model().SelectModelObject(mypart.ModelIdentifier) as TSM.Part;
-
-
-                string prof_type = "";
-
-                plate.GetReportProperty("PROFILE_TYPE", ref prof_type);
-                //////////////////////////////////Filtering all the plates////////////////////////////////
-
-                TSD.PointList bounding_box_x = boundingBoxHandler.BoundingBoxSort(plate, current_view);
-                TSD.PointList bounding_box_y = boundingBoxHandler.BoundingBoxSort(plate, current_view, SortBy.Y);
-                model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.ViewCoordinateSystem));
-                TSG.Vector x_vec_of_plate = plate.GetCoordinateSystem().AxisX;
-                TSG.Vector y_vec_of_plate = plate.GetCoordinateSystem().AxisY;
-                TSG.Vector z_vec_of_plate = x_vec_of_plate.Cross(y_vec_of_plate);
-                model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
-                string profile = plate.Profile.ProfileString;
-                if (((prof_type == "L") && (Convert.ToInt32(x_vec_of_plate.X) == 0)))
-                {
-
-
-                    if ((Convert.ToInt64(bounding_box_y[0].Y) >= Convert.ToInt64(top_front / 2)))
-                    {
-                        ptlist_for_attachments_top.Add(facePointHandler.Get_face_point(plate, current_view));
-                    }
-                    else if ((Convert.ToInt64(bounding_box_y[1].Y) <= -Convert.ToInt64(top_front / 2)))
-                    {
-                        ptlist_for_attachments_bottom.Add(facePointHandler.Get_face_point(plate, current_view));
-                    }
-
-                }
-
-                else if ((plate.GetType().Equals(typeof(TSM.PolyBeam))) && (y_vec_of_plate.Z != 0))
-                {
-                    if ((Convert.ToInt64(bounding_box_y[0].Y) >= Convert.ToInt64(top_front) / 2))
-                    {
-                        ptlist_for_attachments_top.Add(facePointHandler.Get_face_point(plate, current_view));
-                    }
-                    else if ((Convert.ToInt64(bounding_box_y[1].Y) <= -Convert.ToInt64(top_front / 2)))
-                    {
-                        ptlist_for_attachments_bottom.Add(facePointHandler.Get_face_point(plate, current_view));
-                    }
-
-                }
-                else if ((profile.Contains("HSS")) || (profile.Contains("NUT")) || (profile.Contains("PIPE")))
-                {
-
-                    TSG.Point MIDPT = new TSG.Point(bounding_box_x[0].X / 2 + bounding_box_x[1].X / 2, bounding_box_x[0].Y / 2 + bounding_box_x[1].Y / 2, 0);
-                    if ((Convert.ToInt64(bounding_box_y[0].Y) >= Convert.ToInt64(top_front) / 2))
-                    {
-                        ptlist_for_attachments_top.Add(MIDPT);
-                    }
-                    else if ((Convert.ToInt64(bounding_box_y[1].Y) <= -Convert.ToInt64(top_front / 2)))
-                    {
-                        ptlist_for_attachments_bottom.Add(MIDPT);
-                    }
-
-                }
-                else if (plate.GetType().Equals(typeof(TSM.ContourPlate)))
-                {
-
-
-                }
-
-                else
-                {
-
-                    if ((Convert.ToInt64(bounding_box_y[0].Y) >= Convert.ToInt64(top_front / 2)))
-                    {
-                        ptlist_for_attachments_top.Add(bounding_box_x[0]);
-                    }
-                    else if ((Convert.ToInt64(bounding_box_y[1].Y) <= -Convert.ToInt64(top_front / 2)))
-                    {
-                        ptlist_for_attachments_bottom.Add(bounding_box_x[0]);
-                    }
-
-                }
-            }
-
-            try
-            {
-                TSD.StraightDimensionSet.StraightDimensionSetAttributes RD = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                RD.DimensionType = TSD.DimensionSetBaseAttributes.DimensionTypes.USAbsolute2;
-                RD.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                RD.Color = DrawingColors.Gray70;
-                RD.Text.Font.Color = DrawingColors.Gray70;
-                RD.Arrowhead.Head = ArrowheadTypes.FilledArrow;
-                dim_set_handler.CreateDimensionSet(current_view as TSD.ViewBase, ptlist_for_attachments_top, new TSG.Vector(0, 1, 0), 500, RD);
-            }
-            catch
-            {
-            }
-            try
-            {
-                TSD.StraightDimensionSet.StraightDimensionSetAttributes RD = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                RD.DimensionType = TSD.DimensionSetBaseAttributes.DimensionTypes.USAbsolute2;
-                RD.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                RD.Color = DrawingColors.Gray70;
-                RD.Text.Font.Color = DrawingColors.Gray70;
-                RD.Arrowhead.Head = ArrowheadTypes.FilledArrow;
-                dim_set_handler.CreateDimensionSet(current_view as TSD.ViewBase, ptlist_for_attachments_bottom, new TSG.Vector(0, -1, 0), 500, RD);
-            }
-            catch
-            {
-            }
-
-        }
-        public void Dimensions_for_attachments_for_outside_flange_top_bottom(TSM.Beam main_part, TSD.View current_view, double output)
-        {
-            List<double> catalog_values = catalogHandler.Getcatalog_values(main_part);
-            double top_front;
-            if (current_view.ViewType.Equals(TSD.View.ViewTypes.FrontView))
-
-            ///////////////////Values based on which gusset plates are filtered, Outside flange or Web based on view type///////////////////
-            {
-                top_front = (catalog_values[0]);
-            }
-            else
-            {
-                top_front = (catalog_values[1]);
-            }
-
-            TSM.Model model = new TSM.Model();
-            TSD.DrawingHandler drg_handler = new TSD.DrawingHandler();
-            TSD.StraightDimensionSetHandler dim_set_handler = new TSD.StraightDimensionSetHandler();
-            TSD.PointList ptlist_for_attachments_top = new TSD.PointList();
-            ptlist_for_attachments_top.Add(new TSG.Point(0, 0, 0));
-            TSD.PointList ptlist_for_attachments_bottom = new TSD.PointList();
-            TSD.PointList bottom_platefilter = new TSD.PointList();
-            TSD.PointList top_platefilter = new TSD.PointList();
-            ptlist_for_attachments_bottom.Add(new TSG.Point(0, 0, 0));
-            TSD.DrawingObjectEnumerator enum_for_parts_drg = current_view.GetAllObjects(typeof(TSD.Part));
-
-            while (enum_for_parts_drg.MoveNext())
-            {
-                TSD.Part mypart = enum_for_parts_drg.Current as TSD.Part;
-
-                TSM.Part plate = new TSM.Model().SelectModelObject(mypart.ModelIdentifier) as TSM.Part;
-
-
-                string prof_type = "";
-
-                plate.GetReportProperty("PROFILE_TYPE", ref prof_type);
-                //////////////////////////////////Filtering all the plates////////////////////////////////
-
-                TSD.PointList bounding_box_y = boundingBoxHandler.BoundingBoxSort(plate, current_view, SortBy.Y);
-                TSD.PointList bounding_box_x = boundingBoxHandler.BoundingBoxSort(plate, current_view);
-                model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.ViewCoordinateSystem));
-                TSG.Vector x_vec_of_plate = plate.GetCoordinateSystem().AxisX;
-                TSG.Vector y_vec_of_plate = plate.GetCoordinateSystem().AxisY;
-                TSG.Vector z_vec_of_plate = x_vec_of_plate.Cross(y_vec_of_plate);
-                model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
-                string profile = plate.Profile.ProfileString;
-                //if(prof_type.Contains("L"))
-                //{
-
-                //}-
-
-
-                if (((prof_type == "L") && (Convert.ToInt32(x_vec_of_plate.X) == 0)))
-                {
-
-
-                    if ((Convert.ToInt64(bounding_box_x[0].X) >= Convert.ToInt64(top_front) / 2))
-                    {
-                        ptlist_for_attachments_top.Add(facePointHandler.Get_face_point(plate, current_view));
-                    }
-                    else if ((Convert.ToInt64(bounding_box_x[1].X) <= -Convert.ToInt64(top_front) / 2))
-                    {
-                        ptlist_for_attachments_bottom.Add(facePointHandler.Get_face_point(plate, current_view));
-                    }
-
-                }
-
-                else if ((plate.GetType().Equals(typeof(TSM.PolyBeam))) && (y_vec_of_plate.Z != 0))
-                {
-                    if ((Convert.ToInt64(bounding_box_x[0].X) >= Convert.ToInt64(top_front) / 2))
-                    {
-                        ptlist_for_attachments_top.Add(facePointHandler.Get_face_point(plate, current_view));
-                    }
-                    else if ((Convert.ToInt64(bounding_box_x[1].X) <= -Convert.ToInt64(top_front) / 2))
-                    {
-                        ptlist_for_attachments_bottom.Add(facePointHandler.Get_face_point(plate, current_view));
-                    }
-
-                }
-                else if ((profile.Contains("HSS")) || (profile.Contains("NUT")) || (profile.Contains("PIPE")))
-                {
-
-                    TSG.Point MIDPT = new TSG.Point(bounding_box_x[0].X / 2 + bounding_box_x[1].X / 2, bounding_box_x[0].Y / 2 + bounding_box_x[1].Y / 2, 0);
-                    if ((Convert.ToInt64(bounding_box_x[0].X) >= Convert.ToInt64(top_front) / 2))
-                    {
-                        ptlist_for_attachments_top.Add(MIDPT);
-                    }
-                    else if ((Convert.ToInt64(bounding_box_x[1].X) <= -Convert.ToInt64(top_front) / 2))
-                    {
-                        ptlist_for_attachments_bottom.Add(MIDPT);
-                    }
-
-                }
-                //else if (plate.GetType().Equals(typeof(TSM.ContourPlate)))
-                //{
-
-
-                //}
-                else if ((plate.GetType().Equals(typeof(TSM.Beam))) && (profile.Contains("STUD")))
-                {
-
-
-                }
-                else
-                {
-                    TSM.ModelObjectEnumerator boltenum = plate.GetBolts();
-
-                    int a = boltenum.GetSize();
-                    ArrayList zvectorlist = new ArrayList();
-                    while (boltenum.MoveNext())
-                    {
-                        TSM.BoltGroup bolt = boltenum.Current as TSM.BoltGroup;
-
-                        model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.ViewCoordinateSystem));
-                        TSG.CoordinateSystem bolt_coord = bolt.GetCoordinateSystem();
-                        TSG.Vector x_vec_of_bolt = bolt_coord.AxisX;
-                        TSG.Vector y_vec_of_bolt = bolt_coord.AxisY;
-                        TSG.Vector z_vec_of_bolt = x_vec_of_bolt.Cross(y_vec_of_bolt);
-                        model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
-                        zvectorlist.Add(z_vec_of_bolt);
-
-                    }
-
-                    int az = 0;
-                    int bz = 0;
-                    foreach (TSG.Vector zvector in zvectorlist)
-                    {
-                        if (zvector.Z == 0)
-                        {
-                            az++;
-
-                        }
-                        else if (zvector.Z != 0)
-                        {
-                            bz++;
-                        }
-                    }
-                    if (bz == 0)
-                    {
-
-
-
-
-                        if ((Convert.ToInt64(bounding_box_x[0].X) >= Convert.ToInt64(top_front / 2)))
-                        {
-                            if (prof_type == "B")
-                            {
-                                ptlist_for_attachments_top.Add(bounding_box_x[0]);
-                            }
-                            else
-                            {
-                                ptlist_for_attachments_top.Add(bounding_box_x[1]);
-                            }
-                        }
-                        else if ((Convert.ToInt64(bounding_box_x[1].X) <= -Convert.ToInt64(top_front / 2)))
-                        {
-                            if (prof_type == "B")
-                            {
-
-                                ptlist_for_attachments_bottom.Add(bounding_box_x[0]);
-                            }
-                            else
-                            {
-
-                                ptlist_for_attachments_bottom.Add(bounding_box_x[1]);
-                            }
-
-                        }
-
-                        else if ((Convert.ToInt64(bounding_box_y[1].Y) > Convert.ToInt64(output)))
-                        {
-
-
-
-                        }
-                        else if (Convert.ToInt64(bounding_box_y[0].Y) < 0)
-                        {
-
-                        }
-
-
-
-
-                    }
-
-
-                }
-            }
-            TSD.StraightDimensionSet.StraightDimensionSetAttributes rd = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-            rd.DimensionType = TSD.DimensionSetBaseAttributes.DimensionTypes.USAbsolute2;
-            rd.Arrowhead.Head = ArrowheadTypes.FilledArrow;
-            rd.Color = DrawingColors.Gray70;
-            rd.Text.Font.Color = DrawingColors.Gray70;
-            rd.Color = DrawingColors.Gray70;
-
-
-
-            double distance = (catalog_values[0]);
-
-            try
-            {
-
-                dim_set_handler.CreateDimensionSet(current_view as TSD.ViewBase, ptlist_for_attachments_top, new TSG.Vector(1, 0, 0), distance + 200, rd);
-
-
-            }
-            catch
-            {
-            }
-
-            try
-            {
-
-
-                dim_set_handler.CreateDimensionSet(current_view as TSD.ViewBase, ptlist_for_attachments_bottom, new TSG.Vector(-1, 0, 0), distance + 200, rd);
-            }
-            catch
-            {
-            }
-        }
-
-        public string check_for_angle_dim(TSM.Part anglepart, TSD.View currentview)
+    
+        private string CheckAngleDimensionNeeded(TSM.Part anglepart, TSD.View currentview)
         {
 
             TSM.Model mymodel = new TSM.Model();
             List<string> list_of_bolt = new List<string>();
+            string angle_dim = "NEED";
             TSM.ModelObjectEnumerator mybolt_enum = anglepart.GetBolts();
             int BOLT_COUNT = mybolt_enum.GetSize();
 
@@ -3790,55 +3087,59 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                 mymodel.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
                 if (Convert.ToInt64(zaxis.Z) != 0)
                 {
-
-                    list_of_bolt.Add("TRUE");
-
-                }
-                else
-                {
-                    list_of_bolt.Add("FALSE");
+                    angle_dim = "NOT_NEED";
+                    break;
 
                 }
+ 
+                //if (Convert.ToInt64(zaxis.Z) != 0)
+                //{
 
+                //    list_of_bolt.Add("TRUE");
 
+                //}
+                //else
+                //{
+                //    list_of_bolt.Add("FALSE");
 
+                //}
             }
 
 
-            bool RESULT = list_of_bolt.Any(X => X.Equals("TRUE"));
-            string angle_dim;
-            if (RESULT == true)
-            {
-                angle_dim = "NOT_NEED";
+            //bool RESULT = list_of_bolt.Any(X => X.Equals("TRUE"));
+            
+            //if (RESULT == true)
+            //{
+            //    angle_dim = "NOT_NEED";
 
-            }
-            else
-            {
-                angle_dim = "NEED";
+            //}
+            //else
+            //{
+            //    angle_dim = "NEED";
 
-            }
+            //}
 
             return angle_dim;
         }
 
 
-        public TSG.Point angle_mid_pt(List<AngleFaceArea> myreq, TSD.View current_view)
+        private TSG.Point FindAngleMidPoint(List<AngleFaceArea> myreq, TSD.View current_view)
         {
             TSM.Model mymodel = new TSM.Model();
             TSG.Matrix toviewmatrix = TSG.MatrixFactory.ToCoordinateSystem(current_view.ViewCoordinateSystem);
-            myreq.RemoveAll(x => x.vectortype.Equals("X"));
+            myreq.RemoveAll(x => x.VectorType.Equals("X"));
             var myreq1 = (from vector in myreq
-                          group vector by vector.vectortype into newlist
+                          group vector by vector.VectorType into newlist
                           select new
                           {
-                              vector_type = newlist.Key,
-                              face = newlist.ToList()
+                              VectorType = newlist.Key,
+                              Face = newlist.ToList()
                           }).ToList();
             List<TSS.Face> myface_list = new List<TSS.Face>();
 
             for (int h = 0; h < myreq1.Count; h++)
             {
-                myface_list.Add((myreq1[h].face.Find(x => x.area.Equals(myreq1[h].face.Max(y => y.area)))).face);
+                myface_list.Add((myreq1[h].Face.Find(x => x.Area.Equals(myreq1[h].Face.Max(y => y.Area)))).Face);
             }
             List<TSG.Point> list1 = new List<TSG.Point>();
             List<TSG.Point> list2 = new List<TSG.Point>();

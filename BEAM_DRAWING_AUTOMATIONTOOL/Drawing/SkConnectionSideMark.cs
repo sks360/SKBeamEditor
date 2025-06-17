@@ -78,7 +78,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing
         }
 
 
-        public void Arrange_part_marks(TSD.AssemblyDrawing mydrg, TSD.StraightDimension ovr_dim, double actual_distance, TSM.Part mainpart, List<Guid> near_side_parts, List<Guid> far_side_parts, List<section_loc_with_parts> list, List<Guid> top_partmark_to_delete, List<TSM.Part> list_of_parts_for_bottom_view_mark_retain)
+        public void Arrange_part_marks(TSD.AssemblyDrawing mydrg, TSD.StraightDimension ovr_dim, double actual_distance, TSM.Part mainpart, List<Guid> near_side_parts, List<Guid> far_side_parts, List<SectionLocationWithParts> list, List<Guid> top_partmark_to_delete, List<TSM.Part> list_of_parts_for_bottom_view_mark_retain)
         {
 
             List<Guid> BOTTOM_PART_MARK_TO_RETAIN = new List<Guid>();

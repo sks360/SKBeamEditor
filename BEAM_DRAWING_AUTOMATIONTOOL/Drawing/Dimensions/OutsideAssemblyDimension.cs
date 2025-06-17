@@ -97,7 +97,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                 {
                     leftPointList.Add(point);
                 }
-                PointList uniqueLeftPoints = duplicateRemover.pointlist_remove_duplicate_Xvalues(leftPointList);
+                PointList uniqueLeftPoints = duplicateRemover.RemoveDuplicateXValues(leftPointList);
                 CreateDimensionSet(currentView, uniqueLeftPoints, new TSG.Vector(0, 1, 0), distance + DimensionOffset, attributes);
             }
             catch (Exception ex)
@@ -112,7 +112,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                 {
                     rightPointList.Add(point);
                 }
-                PointList uniqueRightPoints = duplicateRemover.pointlist_remove_duplicate_Xvalues(rightPointList);
+                PointList uniqueRightPoints = duplicateRemover.RemoveDuplicateXValues(rightPointList);
                 if (uniqueRightPoints[0].Y > 0)
                 {
                     sortingHandler.SortPoints(uniqueRightPoints, SKSortingHandler.SortBy.Y);

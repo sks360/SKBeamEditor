@@ -27,5 +27,7 @@ namespace SK.Tekla.Drawing.Automation.Models
 
 
         public double SecScale { get; set; }
+
+        public bool KnockOffDimension { get; set; }
     }
 }

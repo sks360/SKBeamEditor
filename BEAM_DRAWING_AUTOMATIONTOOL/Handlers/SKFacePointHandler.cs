@@ -53,15 +53,15 @@ namespace SK.Tekla.Drawing.Automation.Handlers
             TSD.PointList boundingBox = _boundingBoxHandler.BoundingBoxSort(part, currentView);
 
             //TODO VEERA: Test if the edge points are same, otherwise use the OLD code that remains commented
-            //return FindEdgePoint(solid, toViewMatrix, boundingBox, (pt1, pt2, yValue) =>
-            //   Convert.ToInt16(pt1.X) == Convert.ToInt16(pt2.X) &&
-            //   Convert.ToInt16(pt1.Z) == Convert.ToInt16(pt2.Z) &&
-            //   Math.Abs(Convert.ToInt32(pt1.Y - pt2.Y)) == yValue);
-
             return FindEdgePoint(solid, toViewMatrix, boundingBox, (pt1, pt2, yValue) =>
-                Math.Abs(pt1.X - pt2.X) < 1e-6 &&
-                Math.Abs(pt1.Z - pt2.Z) < 1e-6 &&
-                Math.Abs(Math.Abs(pt1.Y - pt2.Y) - yValue) < 1e-6);
+               Convert.ToInt16(pt1.X) == Convert.ToInt16(pt2.X) &&
+               Convert.ToInt16(pt1.Z) == Convert.ToInt16(pt2.Z) &&
+               Math.Abs(Convert.ToInt32(pt1.Y - pt2.Y)) == yValue);
+
+            //return FindEdgePoint(solid, toViewMatrix, boundingBox, (pt1, pt2, yValue) =>
+            //    Math.Abs(pt1.X - pt2.X) < 1e-6 &&
+            //    Math.Abs(pt1.Z - pt2.Z) < 1e-6 &&
+            //    Math.Abs(Math.Abs(pt1.Y - pt2.Y) - yValue) < 1e-6);
         }
 
         public TSG.Point GetFacePointForAngleBothsideWeldedLogic(TSM.Part part, TSD.View currentView)
@@ -72,18 +72,18 @@ namespace SK.Tekla.Drawing.Automation.Handlers
             TSM.Solid solid = part.GetSolid();
             TSG.Matrix toViewMatrix = TSG.MatrixFactory.ToCoordinateSystem(currentView.ViewCoordinateSystem);
             TSD.PointList boundingBox = _boundingBoxHandler.BoundingBoxSort(part, currentView);
-            double zValue = Math.Abs(boundingBox[0].Z - boundingBox[1].Z);
+           
 
-            //return FindEdgePoint(solid, toViewMatrix, boundingBox, (pt1, pt2, zValue) =>
-            //    Convert.ToInt16(pt1.X) == Convert.ToInt16(pt2.X) &&
-            //    Convert.ToInt16(pt1.Y) == Convert.ToInt16(pt2.Y) &&
-            //    Math.Abs(Convert.ToInt32(pt1.Z - pt2.Z)) == Convert.ToInt32(Math.Abs(boundingBox[0].Z - boundingBox[1].Z)),
-            //    false);
-
-            return FindEdgePoint(solid, toViewMatrix, boundingBox, (pt1, pt2, _) =>
-                Math.Abs(pt1.X - pt2.X) < 1e-6 &&
-                Math.Abs(pt1.Y - pt2.Y) < 1e-6 &&
-                Math.Abs(Math.Abs(pt1.Z - pt2.Z) - zValue) < 1e-6, false);
+            return FindEdgePoint(solid, toViewMatrix, boundingBox, (pt1, pt2, zValue) =>
+                Convert.ToInt16(pt1.X) == Convert.ToInt16(pt2.X) &&
+                Convert.ToInt16(pt1.Y) == Convert.ToInt16(pt2.Y) &&
+                Math.Abs(Convert.ToInt32(pt1.Z - pt2.Z)) == Convert.ToInt32(Math.Abs(boundingBox[0].Z - boundingBox[1].Z)),
+                false);
+            //double zValue = Math.Abs(boundingBox[0].Z - boundingBox[1].Z);
+            //return FindEdgePoint(solid, toViewMatrix, boundingBox, (pt1, pt2, _) =>
+            //    Math.Abs(pt1.X - pt2.X) < 1e-6 &&
+            //    Math.Abs(pt1.Y - pt2.Y) < 1e-6 &&
+            //    Math.Abs(Math.Abs(pt1.Z - pt2.Z) - zValue) < 1e-6, false);
         }
         public TSG.Point GetFacePointForAngleSectionView(TSM.Part part, TSD.View currentView)
         {
@@ -93,12 +93,17 @@ namespace SK.Tekla.Drawing.Automation.Handlers
             TSM.Solid solid = part.GetSolid();
             TSG.Matrix toViewMatrix = TSG.MatrixFactory.ToCoordinateSystem(currentView.ViewCoordinateSystem);
             TSD.PointList boundingBox = _boundingBoxHandler.BoundingBoxSort(part, currentView);
-            double xValue = Math.Abs(boundingBox[0].X - boundingBox[1].X);
 
-            return FindEdgePoint(solid, toViewMatrix, boundingBox, (pt1, pt2, _) =>
-                Math.Abs(pt1.Z - pt2.Z) < 1e-6 &&
-                Math.Abs(pt1.Y - pt2.Y) < 1e-6 &&
-                Math.Abs(Math.Abs(pt1.X - pt2.X) - xValue) < 1e-6, false);
+            //double xValue = Math.Abs(boundingBox[0].X - boundingBox[1].X);
+            //return FindEdgePoint(solid, toViewMatrix, boundingBox, (pt1, pt2, _) =>
+            //    Math.Abs(pt1.Z - pt2.Z) < 1e-6 &&
+            //    Math.Abs(pt1.Y - pt2.Y) < 1e-6 &&
+            //    Math.Abs(Math.Abs(pt1.X - pt2.X) - xValue) < 1e-6, false);
+            return FindEdgePoint(solid, toViewMatrix, boundingBox, (pt1, pt2, xValue) =>
+               Convert.ToInt64(pt1.Z) == Convert.ToInt64(pt2.Z) &&
+               Convert.ToInt64(pt1.Y) == Convert.ToInt64(pt2.Y) &&
+               Math.Abs(Convert.ToInt64(pt1.X - pt2.X)) == Convert.ToInt32(Math.Abs(boundingBox[0].X - boundingBox[1].X)),
+               false);
         }
         #endregion
 
@@ -122,7 +127,8 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                 while (faceEnum.MoveNext())
                 {
                     TSS.Face currentFace = faceEnum.Current;
-                    if (Math.Abs(currentFace.Normal.Z) > 1e-6)
+                    //if (Math.Abs(currentFace.Normal.Z) > 1e-6)
+                    if (Convert.ToInt64(currentFace.Normal.Z) != 0)
                     {
                         points.AddRange(GetFacePoints(currentFace));
                     }
@@ -155,28 +161,31 @@ namespace SK.Tekla.Drawing.Automation.Handlers
 
         #region Face Area Methods
 
-        public List<SKAngleFaceArea> GetFaceAreasForAngle(TSM.Part part)
+        public List<AngleFaceArea> GetFaceAreasForAngle(TSM.Part part)
         {
+            //return GetFaceAreas(part, normal =>
+            //    Math.Abs(normal.Y) > 1e-6 ? "Y" :
+            //    Math.Abs(normal.Z) > 1e-6 ? "Z" : "X");
             return GetFaceAreas(part, normal =>
-                Math.Abs(normal.Y) > 1e-6 ? "Y" :
-                Math.Abs(normal.Z) > 1e-6 ? "Z" : "X");
+               normal.Y != 0 ? "Y" :
+               normal.Z != 0 ? "Z" : "X");
         }
 
-        public List<SKAngleFaceArea> GetFaceAreasForTProfile(TSM.Part part)
+        public List<AngleFaceArea> GetFaceAreasForTProfile(TSM.Part part)
         {
             return GetFaceAreas(part, normal => Math.Abs(normal.Y) > 1e-6 ? "Y" : null);
         }
 
-        public List<SKAngleFaceArea> GetFaceAreasForChannel(TSM.Part part)
+        public List<AngleFaceArea> GetFaceAreasForChannel(TSM.Part part)
         {
             return GetFaceAreas(part, normal => Math.Abs(normal.Z) > 1e-6 ? "Z" : null);
         }
 
-        private List<SKAngleFaceArea> GetFaceAreas(TSM.Part part, Func<TSG.Vector, string> vectorTypeSelector)
+        private List<AngleFaceArea> GetFaceAreas(TSM.Part part, Func<TSG.Vector, string> vectorTypeSelector)
         {
             if (part == null) throw new ArgumentNullException(nameof(part));
 
-            List<SKAngleFaceArea> faceAreas = new List<SKAngleFaceArea>();
+            List<AngleFaceArea> faceAreas = new List<AngleFaceArea>();
             TSM.Model model = new TSM.Model();
             var workPlaneHandler = model.GetWorkPlaneHandler();
             var originalPlane = workPlaneHandler.GetCurrentTransformationPlane();
@@ -195,7 +204,7 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                     {
                         List<TSG.Point> points = GetFacePoints(face);
                         double area = CalculateFaceArea(points);
-                        faceAreas.Add(new SKAngleFaceArea { Area = area, Face = face, VectorType = vectorType });
+                        faceAreas.Add(new AngleFaceArea { Area = area, Face = face, VectorType = vectorType });
                     }
                 }
                 return faceAreas;
@@ -221,7 +230,7 @@ namespace SK.Tekla.Drawing.Automation.Handlers
 
         #region Midpoint Method
 
-        public TSG.Point GetTProfileMidPoint(List<SKAngleFaceArea> faceAreas, TSD.View currentView)
+        public TSG.Point GetTProfileMidPoint(List<AngleFaceArea> faceAreas, TSD.View currentView)
         {
             if (faceAreas == null || faceAreas.Count == 0) return null;
             if (currentView == null) throw new ArgumentNullException(nameof(currentView));
@@ -252,7 +261,7 @@ namespace SK.Tekla.Drawing.Automation.Handlers
         #endregion
     }
 
-    public class SKAngleFaceArea
+    public class AngleFaceArea
     {
         public double Area { get; set; }
         public TSS.Face Face { get; set; }

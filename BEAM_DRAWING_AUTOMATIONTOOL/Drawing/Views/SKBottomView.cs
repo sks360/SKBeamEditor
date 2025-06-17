@@ -932,7 +932,10 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Views
             }
         }
 
-        public void TOP_view_creation(TSM.Beam MAINPART, TSD.View view_for_bottom_view, double output, double height_of_mainpart, out TSD.View bottom_view, out TSD.View bottom_view1, TSG.Point p1, TSG.Point p2, string BOTTOM, out List<TSD.View> TOP_VIEW_FLANGE_CUT_LIST, string drg_attribute)
+        public void TOP_view_creation(TSM.Beam MAINPART, TSD.View view_for_bottom_view, 
+            double output, double height_of_mainpart, out TSD.View bottom_view, 
+            out TSD.View bottom_view1, TSG.Point p1, TSG.Point p2, string BOTTOM, 
+            out List<TSD.View> TOP_VIEW_FLANGE_CUT_LIST, string drg_attribute)
         {
             bottom_view = null;
             bottom_view1 = null;

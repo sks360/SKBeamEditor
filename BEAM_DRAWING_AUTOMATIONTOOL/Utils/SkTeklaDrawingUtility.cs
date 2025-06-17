@@ -20,7 +20,7 @@ namespace SK.Tekla.Drawing.Automation.Utils
             part.GetReportProperty(property, ref output);
             return output;
         }
-        public static string get_report_properties1(TSM.Assembly part, string property)
+        public static string GetSKReportProperty(TSM.Assembly part, string property)
         {
             string output = "";
             part.GetReportProperty(property, ref output);

@@ -52,7 +52,7 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
     {
 
         public static string skApplicationName = "BEAM DRAWING AUTOMATIONTOOL";
-        public static string skApplicationVersion = "2503.10";
+        public static string skApplicationVersion = "2506.0.0.0";
         //Control names changed
         //public static string skApplicationVersion = "2503.10";
         //User Option values stored and loaded
@@ -210,6 +210,7 @@ namespace BEAM_DRAWING_AUTOMATIONTOOL
                 NeedEleDimension = chkwptxteledim.Checked,
                 NeedRDConnectionMark = chkrdconnmark.Checked,
                 NeedCutLength = chkcutlen.Checked,
+                KnockOffDimension = chkknockoffdim.Checked,
                 SecScale = chksecscale.Checked && cmbsecscale.Text.Length > 0 ? Convert.ToDouble(cmbsecscale.Text) : 0
             };
         }

@@ -291,9 +291,10 @@
     <Compile Include="Drawing\Dimensions\ElevationDimension.cs" />
     <Compile Include="Drawing\Dimensions\OutsideAssemblyDimension.cs" />
     <Compile Include="Drawing\Dimensions\AttachmentDimension.cs" />
-    <Compile Include="Drawing\Dimensions\GussetDimension.cs" />
+    <Compile Include="Drawing\Dimensions\SKGussetDimension.cs" />
     <Compile Include="Drawing\Dimensions\SKFlangeOutDimension.cs" />
     <Compile Include="Drawing\Dimensions\SkStudDimensions.cs" />
+    <Compile Include="Drawing\DuplicateRemover_Old.cs" />
     <Compile Include="Drawing\DuplicateRemover.cs" />
     <Compile Include="Drawing\FallTechDrawing.cs" />
     <Compile Include="Drawing\SkConnectionSideMark.cs" />
@@ -316,7 +317,6 @@
     <Compile Include="Handlers\SKAngleHandler.cs" />
     <Compile Include="Handlers\BoltMatrixHandler.cs" />
     <Compile Include="Handlers\SKBoundingBoxHandler.cs" />
-    <Compile Include="Handlers\FacePointHandler.cs" />
     <Compile Include="Handlers\SKCatalogHandler.cs" />
     <Compile Include="Handlers\SKDrawingHandler.cs" />
     <Compile Include="Handlers\SKSortingHandler.cs" />

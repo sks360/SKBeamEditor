@@ -14,6 +14,7 @@ using TSS = Tekla.Structures.Solid;
 using System.Collections;
 using Tekla.Structures.Drawing;
 using Tekla.Structures.Geometry3d;
+using Org.BouncyCastle.Asn1.Cms;
 
 namespace SK.Tekla.Drawing.Automation.Support
 {
@@ -35,33 +36,6 @@ namespace SK.Tekla.Drawing.Automation.Support
     }
 
 
-
-    public class section_loc_with_parts
-    {
-        public List<TSM.Part> partlist;
-        public double distance;
-        public string sectionview_needed;
-        public int index_of_same_sec;
-        public TSD.View myview;
-        public bool check_for_already_part_available;
-        public List<TSM.Part> req_partlist;
-    }
-
-    public class REQ_LIST_FOR_ATTRIBUTE
-    {
-        public TSG.Point MINX;
-        public TSG.Point MAXX;
-    }
-
-    public class req_attribute
-    {
-        public string attribute;
-        public bool req_att;
-        public double scale_req;
-        public double min_length_req;
-    }
-
-
     public class SKLayout
     {
         public string attribute;
@@ -75,22 +49,11 @@ namespace SK.Tekla.Drawing.Automation.Support
         }
     }
 
-    public class DRG_ATTRIBUTE_SORT
+    public class DimensionWithDifference
     {
-
-        public string attribute;
-        public int VALUE;
-    }
-    public class DIMENSION_WITH_DIFFERNCE
-    {
-        public TSD.StraightDimension MTDIM;
-        public double DIFFER;
-        public TSG.Vector MYVECTOR;
-
-    }
-    public class attachments
-    {
-
+        public TSD.StraightDimension StDimen;
+        public double Difference;
+        public TSG.Vector MyVector;
 
     }
 
@@ -182,7 +145,14 @@ namespace SK.Tekla.Drawing.Automation.Support
         public string SectionViewNeeded { get; set; }
         public int IndexOfSameSection { get; set; }
         public TSD.View MyView { get; set; }
-        public List<Part> RequiredPartList { get; set; } = new List<Part>();
+        public List<TSM.Part> RequiredPartList  { get; set; } = new List<TSM.Part>();
+
+        public override string ToString()
+        {
+            return $"PartList: {PartList.Count}  RequiredPartList: {RequiredPartList.Count} " +
+                $"Distance: {Distance} SectionViewNeeded: {SectionViewNeeded} MyView: {MyView.Name}";
+        }
+
     }
 
     public class RequiredPoints
@@ -195,10 +165,10 @@ namespace SK.Tekla.Drawing.Automation.Support
         public double DistanceForZ { get; set; }
     }
 
-    public class DimensionWithDifference
-    {
-        public StraightDimension Dimension { get; set; }
-        public double Difference { get; set; }
-        public Vector Vector { get; set; }
-    }
+    //public class DimensionWithDifference
+    //{
+    //    public StraightDimension Dimension { get; set; }
+    //    public double Difference { get; set; }
+    //    public Vector Vector { get; set; }
+    //}
 }

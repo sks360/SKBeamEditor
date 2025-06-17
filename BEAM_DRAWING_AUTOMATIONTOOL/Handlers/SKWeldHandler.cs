@@ -108,7 +108,7 @@ namespace SK.Tekla.Drawing.Automation.Handlers
             }
         }
 
-        public void WeldDelete(TSD.View currentViewFrontViewReq, List<section_loc_with_parts> list, TSD.Drawing beamDrawing)
+        public void WeldDelete(TSD.View currentViewFrontViewReq, List<SectionLocationWithParts> list, TSD.Drawing beamDrawing)
         {
             // Use HashSet for O(1) lookup performance
             HashSet<Identifier> weldsToKeep = new HashSet<Identifier>();
@@ -117,7 +117,7 @@ namespace SK.Tekla.Drawing.Automation.Handlers
             foreach (var section in list)
             {
                 // Filter beams with profile type "L" efficiently using LINQ
-                var angleBeams = section.partlist
+                var angleBeams = section.PartList
                     .OfType<TSM.Beam>()
                     .Where(b => SkTeklaDrawingUtility.get_report_properties(b, "PROFILE_TYPE") == "L")
                     .ToList();
