@@ -291,6 +291,7 @@
     <Compile Include="Drawing\Dimensions\ElevationDimension.cs" />
     <Compile Include="Drawing\Dimensions\OutsideAssemblyDimension.cs" />
     <Compile Include="Drawing\Dimensions\AttachmentDimension.cs" />
+    <Compile Include="Drawing\Dimensions\SKDimensionHandler.cs" />
     <Compile Include="Drawing\Dimensions\SKGussetDimension.cs" />
     <Compile Include="Drawing\Dimensions\SKFlangeOutDimension.cs" />
     <Compile Include="Drawing\Dimensions\SkStudDimensions.cs" />
@@ -304,6 +305,8 @@
     <Compile Include="Drawing\Views\CreateOrientationMark.cs" />
     <Compile Include="Drawing\Views\FixFreeSpace.cs" />
     <Compile Include="Drawing\Views\SKBottomView.cs" />
+    <Compile Include="Drawing\Views\SKSectionFlangeBuilder.cs" />
+    <Compile Include="Drawing\Views\SKTopViewBuilderOld.cs" />
     <Compile Include="Drawing\Views\SKSectionView.cs" />
     <Compile Include="Drawing\Views\SKSectionViewOld.cs" />
     <Compile Include="FormDrawingEditor.cs">

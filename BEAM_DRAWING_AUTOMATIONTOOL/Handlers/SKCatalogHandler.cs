@@ -21,6 +21,50 @@ namespace SK.Tekla.Drawing.Automation.Handlers
     {
         public SKCatalogHandler() { }
 
+        public ArrayList GetCatalog_values(TSM.Part main_part)
+        {
+            
+            LibraryProfileItem mainpro = new LibraryProfileItem { ProfileName = main_part.Profile.ProfileString };
+            mainpro.Select();
+            ArrayList parameters = mainpro.aProfileItemParameters;
+
+            if (parameters.Count < 3)
+            {
+                throw new InvalidOperationException("Insufficient parameters");
+            }
+
+            var param0 = parameters[0] as ProfileItemParameter;
+            var param1 = parameters[1] as ProfileItemParameter;
+            var param2 = parameters[2] as ProfileItemParameter;
+
+            if (param0 == null || param1 == null || param2 == null)
+            {
+                throw new InvalidOperationException("Invalid parameter type");
+            }
+            ArrayList values = new ArrayList()
+            {
+                param0,param1,param2
+            };
+            return values;
+
+
+            //ArrayList values = new ArrayList();
+            //double size1_m = 0, size3_m = 0, size2_m = 0;
+            //LibraryProfileItem mainpro = new LibraryProfileItem { ProfileName = main_part.Profile.ProfileString };
+            //mainpro.Select();
+            //ArrayList parameters_for_main = mainpro.aProfileItemParameters;
+            //ProfileItemParameter bm = parameters_for_main[0] as ProfileItemParameter;
+            //ProfileItemParameter cm = parameters_for_main[2] as ProfileItemParameter;
+            //ProfileItemParameter dm = parameters_for_main[1] as ProfileItemParameter;
+            //size1_m = bm.Value;
+            //size3_m = cm.Value;
+            //size2_m = dm.Value;
+            //values.Add(size1_m);
+            //values.Add(size2_m);
+            //values.Add(size3_m);
+            //return values;
+        }
+
         public List<double> Getcatalog_values(TSM.Part main_part)
         {
             LibraryProfileItem mainpro = new LibraryProfileItem { ProfileName = main_part.Profile.ProfileString };
