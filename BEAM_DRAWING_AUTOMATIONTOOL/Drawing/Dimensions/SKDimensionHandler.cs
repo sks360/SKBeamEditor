@@ -43,8 +43,6 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
         private readonly SKFacePointHandler facePointHandler;
 
-        private readonly SKDrawingHandler drawingHandler;
-
         private readonly SKWeldHandler weldHandler;
 
         private readonly DuplicateRemover duplicateRemover;
@@ -75,8 +73,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
             SKCatalogHandler catalogHandler,
             BoltMatrixHandler boltMatrixHandler, SKBoundingBoxHandler boundingBoxHandler,
             SKSortingHandler sortingHandler,
-            SKFacePointHandler facePointHandler,
-             SKDrawingHandler drawingHandler, DuplicateRemover duplicateRemover, CustomInputModel userInput)
+            SKFacePointHandler facePointHandler, DuplicateRemover duplicateRemover, CustomInputModel userInput)
         {
             this.weldHandler = weldHandler;
             this.skBoltHandler = skBoltHandler;
@@ -88,7 +85,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
             this.client = _inputModel.Client;
             this.fontSize = _inputModel.FontSize;
             this.facePointHandler = facePointHandler;
-            this.drawingHandler = drawingHandler;
+
             this.duplicateRemover = duplicateRemover;
             skStudDimensions = new SkStudDimensions(catalogHandler, _inputModel);
             copeDimensions = new CopeDimensions(catalogHandler, _inputModel);
@@ -97,7 +94,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
             elevationDimension = new ElevationDimension(_inputModel);
             attachmentDimension = new AttachmentDimension(catalogHandler, boltMatrixHandler, boundingBoxHandler,
-                sortingHandler, facePointHandler, drawingHandler, duplicateRemover, _inputModel);
+                sortingHandler, facePointHandler,  duplicateRemover, _inputModel);
             outsideAssemblyDimension = new OutsideAssemblyDimension(catalogHandler, boltMatrixHandler,
                 boundingBoxHandler, sortingHandler, duplicateRemover, _inputModel);
 
@@ -111,11 +108,15 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
         {
             return flangeOutDimension;
         }
-        public void ConfigureTopViewBoltDimensions(Model mymodel, AssemblyDrawing beam_assembly_drg,
+        public (List<Guid> TOP_VIEW_PARTMARK_TO_RETAIN, List<Guid> TOP_VIEW_BOLTMARK_TO_RETAIN)
+            ConfigureTopViewBoltDimensions(Model mymodel, AssemblyDrawing beam_assembly_drg,
             TSM.Part main_part, TSM.Assembly ASSEMBLY, double output, string drg_att, List<SectionLocationWithParts> list,
             double SCALE, List<double> MAINPART_PROFILE_VALUES, Beam main,
-            ref List<Guid> TOP_VIEW_PARTMARK_TO_RETAIN, ref List<Guid> TOP_VIEW_BOLTMARK_TO_RETAIN, TSD.View current_view)
+            TSD.View current_view)
         {
+            List<Guid> TOP_VIEW_PARTMARK_TO_RETAIN = new List<Guid>();
+           List<Guid> TOP_VIEW_BOLTMARK_TO_RETAIN = new List<Guid>();
+
             Stopwatch topViewMatch = new Stopwatch();
             topViewMatch.Start();
             current_view.Attributes.Scale = SCALE;
@@ -656,7 +657,9 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
             copeDimensions.ProvideFittingCutDimensions(mymodel, current_view, main, drg_att);
 
             //////////////////// end of cope dimension for topview///////////////
+            current_view.GetDrawing().CommitChanges();
             attachmentDimension.CreateDimensionInsideFlangeTop(main, current_view, output, ref TOP_VIEW_PARTMARK_TO_RETAIN, drg_att);
+            current_view.GetDrawing().CommitChanges();
             gussetDimension.GussetDimensionsWithBolts(main, current_view, ref TOP_VIEW_PARTMARK_TO_RETAIN, ref TOP_VIEW_BOLTMARK_TO_RETAIN, drg_att);
 
             skBoltHandler.partmark_for_bolt_dim_attachments(current_view, ref TOP_VIEW_PARTMARK_TO_RETAIN);
@@ -664,15 +667,17 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
             topViewMatch.Stop();
             Console.WriteLine("top_watch.....>" + topViewMatch.ElapsedMilliseconds.ToString());
 
-
+            return (TOP_VIEW_PARTMARK_TO_RETAIN,TOP_VIEW_BOLTMARK_TO_RETAIN) ;
         }
 
-        public void ConfigureFrontViewBoldDimension(Model mymodel, AssemblyDrawing beam_assembly_drg, TSM.Part main_part,
+        public (List<Guid> FRONT_VIEW_PARTMARK_TO_RETAIN, List<Guid> FRONT_VIEW_BOLTMARK_TO_RETAIN) ConfigureFrontViewBoldDimension(Model mymodel, AssemblyDrawing beam_assembly_drg, TSM.Part main_part,
          double output, string drg_att, List<SectionLocationWithParts> list, List<RadiusDimension> list_of_radius,
          double SCALE, List<double> MAINPART_PROFILE_VALUES,
-         Beam main, ref List<Guid> FRONT_VIEW_PARTMARK_TO_RETAIN,
-         ref List<Guid> FRONT_VIEW_BOLTMARK_TO_RETAIN, TSD.View current_view, ref double SHORTNENING_VALUE_FOR_BOTTOM_VIEW)
+         Beam main, 
+          TSD.View current_view, ref double SHORTNENING_VALUE_FOR_BOTTOM_VIEW)
         {
+            List<Guid> FRONT_VIEW_PARTMARK_TO_RETAIN = new List<Guid>();
+            List<Guid> FRONT_VIEW_BOLTMARK_TO_RETAIN = new List<Guid>();
             Stopwatch front_view_watch = new Stopwatch();
             front_view_watch.Start();
             current_view.Attributes.Scale = SCALE;
@@ -928,6 +933,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
             FRONT_VIEW_PARTMARK_TO_RETAIN.Add(main_part.Identifier.GUID);
             front_view_watch.Stop();
             Console.WriteLine("front_view_watch.....>" + front_view_watch.ElapsedMilliseconds.ToString());
+
+            return (FRONT_VIEW_PARTMARK_TO_RETAIN,FRONT_VIEW_BOLTMARK_TO_RETAIN) ;
         }
 
     }

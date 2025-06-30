@@ -103,10 +103,10 @@ namespace SK.Tekla.Drawing.Automation.Handlers
             model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
         }
 
-
+       
 
         /// <summary>
-        /// Get the bounding box points
+        /// Get the bounding box points for the given model object
         /// </summary>
         /// <param name="modelObject"></param>
         /// <returns></returns>

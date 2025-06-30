@@ -73,6 +73,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Views
             this.skBoltHandler = skBoltHandler ?? throw new ArgumentNullException(nameof(skBoltHandler));
         }
 
+       
         private StraightDimensionSet.StraightDimensionSetAttributes CreateDimensionAttributes(string defaultADFile)
         {
             var attributes = new StraightDimensionSet.StraightDimensionSetAttributes

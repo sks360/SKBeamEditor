@@ -98,7 +98,7 @@ namespace SK.Tekla.Drawing.Automation.Services
             skAngleHandler = new SKAngleHandler(boltMatrixHandler);
 
             skDimensionHandler = new SKDimensionHandler(weldHandler, skBoltHandler, catalogHandler, boltMatrixHandler, boundingBoxHandler,
-               sortingHandler, facePointHandler, drawingHandler, duplicateRemover, _inputModel);
+               sortingHandler, facePointHandler,  duplicateRemover, _inputModel);
 
 
             skSectionView = new SKSectionViewOld(catalogHandler, boltMatrixHandler, boundingBoxHandler,
@@ -277,20 +277,23 @@ namespace SK.Tekla.Drawing.Automation.Services
 
                         List<TSM.Part> list_of_parts_for_bottom_view_mark_retain = drawingHandler.list_of_parts_for_bottom_part_mark_retain;
 
-                        List<TSD.RadiusDimension> list_of_radius = drawingHandler.list_of_radius_dim;
+                        List<TSD.RadiusDimension> list_of_radius = drawingHandler.radiusDimensionList;
 
-                        TSD.StraightDimension OVERALL_DIMENSION = drawingHandler.OVERALL_DIMENSION;
                         SECTION_CREATION.Stop();
                         #endregion
-                        double mainpartlength = SkTeklaDrawingUtility.get_report_properties_double(main_part, "LENGTH");
+                        double mainpartlength = 0;
+                        main_part.GetReportProperty("LENGTH", ref mainpartlength);
+
+                      
                         string profile_type = "";
                         main_part.GetReportProperty("PROFILE_TYPE", ref profile_type);
 
 
                         ////////////////////////////////////////////////////GETTING CATALOG VALUES OF MAINPART////////////////////////////////////////////////////////////////////////           
                         List<double> MAINPART_PROFILE_VALUES = catalogHandler.Getcatalog_values(main_part);
-                        double mainPartHeight = MAINPART_PROFILE_VALUES[0];
-
+                        //double mainPartHeight = MAINPART_PROFILE_VALUES[0];
+                        double mainPartHeight = 0;
+                        main_part.GetReportProperty("HEIGHT", ref mainPartHeight);
                         ////////////////////////////////////////////////////CHECKING FOR BOTTOM VIEW CREATION ////////////////////////////////////////////////////////////////////////////////////
                         TSM.Beam main = main_part as TSM.Beam;
                         TSG.Point p1_bottm = null;
@@ -321,40 +324,6 @@ namespace SK.Tekla.Drawing.Automation.Services
 
 
                         List<double> catalog_values = catalogHandler.Getcatalog_values(main_part);
-                        //ArrayList list_of_secondaries = ASSEMBLY.GetSecondaries();
-                        //List<Guid> nearside_parts = new List<Guid>();
-                        //List<Guid> farside_parts = new List<Guid>();
-                        //double WT1 = 0;
-                        //if (profile_type == "U")
-                        //{
-                        //    TSG.Vector zvector1 = main_part.GetCoordinateSystem().AxisX.Cross(main_part.GetCoordinateSystem().AxisY);
-                        //    mymodel.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
-
-                        //    zvector1.Normalize();
-                        //    double WT3 = (catalog_values[1]);
-                        //    if (zvector1.Z > 0)
-                        //    {
-                        //        WT1 = (-WT3 / 2);
-                        //    }
-                        //    else
-                        //    {
-                        //        WT1 = (WT3 / 2);
-                        //    }
-                        //}
-                        //foreach (TSM.Part part in list_of_secondaries)
-                        //{
-                        //    TSD.PointList bbz = boundingBoxHandler.BoundingBoxSort(part, main_part as TSM.Beam, SKSortingHandler.SortBy.Z);
-
-                        //    if (bbz[1].Z < WT1)
-                        //    {
-                        //        farside_parts.Add(part.Identifier.GUID);
-                        //    }
-                        //    else if (bbz[0].Z > WT1)
-                        //    {
-                        //        nearside_parts.Add(part.Identifier.GUID);
-                        //    }
-                        //}
-
 
                         mymodel.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
                         currentAssemblyDrawing.PlaceViews();
@@ -378,9 +347,15 @@ namespace SK.Tekla.Drawing.Automation.Services
                             {
                                 #region FRONT_VIEW
                                 //////////////////////////////////////////////////bolt rd dimension in front view using matrix function ///////////////////////////////////////////////////////////////////////
-                                skDimensionHandler.ConfigureFrontViewBoldDimension(mymodel, currentAssemblyDrawing, main_part, output,
+                                
+                                 var markToRetain = 
+                                    skDimensionHandler.ConfigureFrontViewBoldDimension(mymodel, currentAssemblyDrawing, main_part, output,
                                 defaultADFile, list, list_of_radius, SCALE, MAINPART_PROFILE_VALUES, main,
-                                ref FRONT_VIEW_PARTMARK_TO_RETAIN, ref FRONT_VIEW_BOLTMARK_TO_RETAIN, current_view, ref SHORTNENING_VALUE_FOR_BOTTOM_VIEW);
+                                 current_view, ref SHORTNENING_VALUE_FOR_BOTTOM_VIEW);
+                                FRONT_VIEW_PARTMARK_TO_RETAIN = markToRetain.FRONT_VIEW_PARTMARK_TO_RETAIN;
+                                FRONT_VIEW_BOLTMARK_TO_RETAIN = markToRetain.FRONT_VIEW_BOLTMARK_TO_RETAIN;
+                                
+
 
                                 #endregion
                                 #region bottom_view
@@ -403,10 +378,14 @@ namespace SK.Tekla.Drawing.Automation.Services
                             if (current_view.ViewType.Equals(TSD.View.ViewTypes.TopView))
                             {
                                 /////////////////////////////////////////////////bolt rd dimension in top view using matrix function /////////////////////////////////////////////////////////////
-                                skDimensionHandler.ConfigureTopViewBoltDimensions(mymodel,
+                                current_view.GetDrawing().CommitChanges();
+                                var markToRetain = skDimensionHandler.ConfigureTopViewBoltDimensions(mymodel,
                                     currentAssemblyDrawing, main_part, ASSEMBLY, output,
                                     defaultADFile, list, SCALE, MAINPART_PROFILE_VALUES,
-                                    main, ref TOP_VIEW_PARTMARK_TO_RETAIN, ref TOP_VIEW_BOLTMARK_TO_RETAIN, current_view);
+                                    main, current_view);
+                                TOP_VIEW_PARTMARK_TO_RETAIN = markToRetain.TOP_VIEW_PARTMARK_TO_RETAIN;
+                                TOP_VIEW_BOLTMARK_TO_RETAIN = markToRetain.TOP_VIEW_BOLTMARK_TO_RETAIN;
+                                current_view.GetDrawing().CommitChanges();
                             }
                             #endregion
 

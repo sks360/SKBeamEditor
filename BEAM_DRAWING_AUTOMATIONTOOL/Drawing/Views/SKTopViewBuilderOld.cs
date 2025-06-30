@@ -47,7 +47,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Views
             _inputModel = inputModel;
             this.client = inputModel.Client;
             this.flangeOutDimension = flangeOutDimension;
-
+            this.duplicateRemover = duplicateRemover;
+            this.boltMatrixHandler = boltMatrixHandler;
         }
 
         private void TOP_view_creation(TSM.Beam MAINPART, TSD.View view_for_bottom_view,

@@ -13,6 +13,22 @@ namespace SK.Tekla.Drawing.Automation.Utils
 {
     public static class SkTeklaDrawingUtility
     {
+
+        /// <summary>
+        /// Convert the model points to view points
+        /// </summary>
+        /// <param name="currentView"></param>
+        /// <param name="startWorkPoint"></param>
+        /// <param name="endWorkPoint"></param>
+        /// <returns></returns>
+        public static  (TSG.Point startDrawPoint, TSG.Point endDrawPoint) GetDrawingPoints(TSD.View currentView,
+            TSG.Point startWorkPoint, TSG.Point endWorkPoint)
+        {
+            TSG.Matrix toViewMatrix = TSG.MatrixFactory.ToCoordinateSystem(currentView.DisplayCoordinateSystem);
+            return (toViewMatrix.Transform(startWorkPoint), toViewMatrix.Transform(endWorkPoint));
+        }
+
+
         public static string get_report_properties(TSM.Part part, string property)
         {
 
@@ -26,12 +42,7 @@ namespace SK.Tekla.Drawing.Automation.Utils
             part.GetReportProperty(property, ref output);
             return output;
         }
-        public static double get_report_properties_double(TSM.Part part, string property)
-        {
-            double output = 0;
-            part.GetReportProperty(property, ref output);
-            return Math.Round((output), 2);
-        }
+     
 
         public static List<TSD.DrawingObject> drg_object_from_enumerator(TSD.DrawingObjectEnumerator drgobjectenum)
         {

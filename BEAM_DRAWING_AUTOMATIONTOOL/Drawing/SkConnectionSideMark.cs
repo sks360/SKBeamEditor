@@ -91,8 +91,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing
             TSD.DrawingObjectEnumerator enum_for_views = mydrg.GetSheet().GetAllViews();
             string mainpartmark = mainpart.GetPartMark();
 
-            double length = SkTeklaDrawingUtility.get_report_properties_double(mainpart, "LENGTH");
-
+            double length = 0;
+            mainpart.GetReportProperty("LENGTH", ref length);
 
             TSM.Model model = new TSM.Model();
 

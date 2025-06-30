@@ -57,14 +57,24 @@ namespace SK.Tekla.Drawing.Automation.Support
 
     }
 
-    public class req_pts
+    /// <summary>
+    /// Required part with point list and part mark
+    /// </summary>
+    public class RequiredPartPoints
     {
-        public double distance;
-        public double distance_for_y;
-        public double distance_for_Z;
-        public TSD.PointList list_of_points;
+        public double distanceX;
+        public double distanceY;
+        public double distanceZ;
+        public TSD.PointList pointList;
         public TSM.Part part;
-        public string PART_MARK;
+        public string partMark;
+        public int ID;
+
+        public override string ToString()
+        {
+            return "ID "+ ID + "distanceX: " + distanceX + " distanceY: " + 
+                distanceY + " distanceZ: " + distanceZ + " partMark: " + partMark;
+        }
     }
 
     public class slope_bolt_class
@@ -150,20 +160,20 @@ namespace SK.Tekla.Drawing.Automation.Support
         public override string ToString()
         {
             return $"PartList: {PartList.Count}  RequiredPartList: {RequiredPartList.Count} " +
-                $"Distance: {Distance} SectionViewNeeded: {SectionViewNeeded} MyView: {MyView.Name}";
+                $"Distance: {Distance} SectionViewNeeded: {SectionViewNeeded} MyView: {MyView}";
         }
 
     }
 
-    public class RequiredPoints
-    {
-        public double Distance { get; set; }
-        public PointList Points { get; set; }
-        public double DistanceForY { get; set; }
-        public Part Part { get; set; }
-        public string PartMark { get; set; }
-        public double DistanceForZ { get; set; }
-    }
+    //public class RequiredPartPoints
+    //{
+    //    public double Distance { get; set; }
+    //    public PointList Points { get; set; }
+    //    public double DistanceForY { get; set; }
+    //    public Part Part { get; set; }
+    //    public string PartMark { get; set; }
+    //    public double DistanceForZ { get; set; }
+    //}
 
     //public class DimensionWithDifference
     //{

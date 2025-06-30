@@ -19,6 +19,7 @@ using System.Collections;
 using Tekla.Structures.Drawing;
 using static SK.Tekla.Drawing.Automation.Handlers.SKSortingHandler;
 using RenderData;
+using System.Net;
 namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 {
     public class AttachmentDimension
@@ -39,8 +40,6 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
         private readonly SKFacePointHandler facePointHandler;
 
-        private readonly SKDrawingHandler drawingHandler;
-
         private readonly bool isRdConnectMark; 
 
         private readonly DuplicateRemover duplicateRemover;
@@ -48,8 +47,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
         public AttachmentDimension(SKCatalogHandler catalogHandler, 
             BoltMatrixHandler boltMatrixHandler, SKBoundingBoxHandler boundingBoxHandler,
             SKSortingHandler sortingHandler,
-            SKFacePointHandler facePointHandler,
-             SKDrawingHandler drawingHandler, DuplicateRemover duplicateRemover, CustomInputModel userInput)
+            SKFacePointHandler facePointHandler, DuplicateRemover duplicateRemover, CustomInputModel userInput)
         {
             this.catalogHandler = catalogHandler;
             this.boltMatrixHandler = boltMatrixHandler;
@@ -59,7 +57,6 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
             this.client = _userInput.Client;
             this.fontSize = _userInput.FontSize;
             this.facePointHandler = facePointHandler;
-            this.drawingHandler = drawingHandler;
             this.isRdConnectMark = _userInput.NeedRDConnectionMark;
             this.duplicateRemover = duplicateRemover;
             
@@ -210,7 +207,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                                     model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
 
 
-                                                    TSG.Point pz = drawingHandler.ConvertedPointsForChannel(model, current_view);
+                                                    TSG.Point pz = ConvertedPointsForChannel(model, current_view);
 
 
                                                     x_value = pz.X;
@@ -278,7 +275,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                                     model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
 
 
-                                                    TSG.Point pz = drawingHandler.ConvertedPointsForChannel(model, current_view);
+                                                    TSG.Point pz = ConvertedPointsForChannel(model, current_view);
 
 
                                                     x_value = pz.X;
@@ -595,7 +592,8 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
         }
 
-        public void CreateDimensionInsideFlangeTop(TSM.Beam main_part, TSD.View current_view, double output, ref List<Guid> PARTMARK_TO_RETAIN, string drg_att)
+        public void CreateDimensionInsideFlangeTop(TSM.Beam main_part, TSD.View current_view, double output, 
+            ref List<Guid> PARTMARK_TO_RETAIN, string drg_att)
         {
             TSD.StraightDimensionSet.StraightDimensionSetAttributes dim_font_height = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
             dim_font_height.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
@@ -745,7 +743,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                                     model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
 
 
-                                                    TSG.Point pz = drawingHandler.ConvertedPointsForChannel(model, current_view);
+                                                    TSG.Point pz = ConvertedPointsForChannel(model, current_view);
 
 
                                                     x_value = pz.X;
@@ -816,7 +814,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                                     model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
 
 
-                                                    TSG.Point pz = drawingHandler.ConvertedPointsForChannel(model,  current_view);
+                                                    TSG.Point pz = ConvertedPointsForChannel(model,  current_view);
 
 
                                                     x_value = pz.X;
@@ -1002,376 +1000,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                     }
                                 }
                             }
-                            //else if (prof_type == "L")
-                            //{
-                            //    ///////////hillsdale angle dim intopview//////////////////////////
-                            //    // ptlist_for_attachments_angle.Add(new TSG.Point(bounding_box_y[1].X, bounding_box_y[1].Y, bounding_box_y[0].Z));
-                            //    TSM.ModelObjectEnumerator platebolts1 = plate.GetBolts();
-
-
-
-
-                            //    List<TSM.BoltGroup> list_of_bolts = new List<TSM.BoltGroup>();
-
-
-                            //    TSG.Matrix toviewmatrix = TSG.MatrixFactory.ToCoordinateSystem(current_view.ViewCoordinateSystem);
-                            //    model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.ViewCoordinateSystem));
-                            //    while (platebolts1.MoveNext())
-                            //    {
-                            //        TSM.BoltGroup model_bolt = platebolts1.Current as TSM.BoltGroup;
-
-
-
-                            //        list_of_bolts.Add(model_bolt);
-
-                            //    }
-
-
-                            //    IEnumerable<TSM.BoltGroup> result1 = (from b in list_of_bolts
-                            //                                          where (Convert.ToInt64((b.GetCoordinateSystem().AxisX.Cross(b.GetCoordinateSystem().AxisY)).Z) == 0)
-                            //                                          select b).ToList();
-
-
-                            //    IEnumerable<TSM.BoltGroup> result = (from b in result1
-                            //                                         where (Convert.ToInt64((b.GetCoordinateSystem().AxisX.Cross(b.GetCoordinateSystem().AxisY)).Y) != 0)
-                            //                                         select b).ToList();
-                            //    //var result = (from b in list_of_bolts
-                            //    //              select new
-                            //    //              {
-                            //    //                  bolt = b,
-                            //    //                  mm = (b.GetCoordinateSystem().AxisX.Cross(b.GetCoordinateSystem().AxisY))
-                            //    //              }
-                            //    //                                        ).ToList();
-
-                            //    model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
-                            //    if (result.Count() == 0)
-                            //    {
-
-                            //        TSM.ModelObjectEnumerator platebolts = plate.GetBolts();
-
-                            //        int a = platebolts.GetSize();
-                            //        if (a > 0)
-                            //        {
-                            //            TSD.PointList p1 = boundingBoxHandler.BoundingBoxSort(plate, current_view);
-
-
-                            //            while (platebolts.MoveNext())
-                            //            {
-                            //                TSM.BoltGroup bolt = platebolts.Current as TSM.BoltGroup;
-                            //                TSG.CoordinateSystem m = bolt.GetCoordinateSystem();
-                            //                TSM.Part mw = bolt.PartToBeBolted;
-                            //                TSM.Part mw1 = bolt.PartToBoltTo;
-                            //                ArrayList mw2 = bolt.OtherPartsToBolt;
-
-                            //                if (!mw.Identifier.ID.Equals(plate.Identifier.ID))
-                            //                {
-
-
-
-
-                            //                    double x_value = 0;
-                            //                    string prof_type_for_channel_check = "";
-                            //                    mw.GetReportProperty("PROFILE_TYPE", ref prof_type_for_channel_check);
-
-                            //                    if (prof_type_for_channel_check != "U")
-                            //                    {
-
-                            //                        TSG.CoordinateSystem kl = mw.GetCoordinateSystem();
-
-                            //                        TSG.Matrix tokkk = TSG.MatrixFactory.ToCoordinateSystem(current_view.ViewCoordinateSystem);
-                            //                        TSG.Point pz = tokkk.Transform(kl.Origin);
-                            //                        x_value = pz.X;
-                            //                    }
-                            //                    else
-                            //                    {
-                            //                        TSG.CoordinateSystem channel_coord = mw.GetCoordinateSystem();
-                            //                        model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(channel_coord));
-                            //                        List<double> catalog_values_for_channel = catalogHandler.Getcatalog_values(mw);
-                            //                        double offset = (catalog_values_for_channel[1]);
-                            //                        TSG.CoordinateSystem kl = new TSG.CoordinateSystem();
-                            //                        kl.Origin = new TSG.Point(0, 0, -offset / 2);
-
-
-
-                            //                        model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
-
-
-                            //                        TSG.Point pz = drawingHandler.converted_points_FOR_CHANNEL(model, kl.Origin, mw as TSM.Beam, current_view);
-
-
-                            //                        x_value = pz.X;
-
-                            //                        model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
-                            //                    }
-
-
-                            //                    TSG.Point face_point_for_angle_bswelded = facePointHandler.GetFacePoint_for_angle_bothside_weldedlogic_top(plate, current_view);
-                            //                    ptlist_for_attachments_top.Add(new TSG.Point(face_point_for_angle_bswelded.X, bounding_box_y[1].Y, bounding_box_y[0].Z));
-                            //                    Guid ID = plate.Identifier.GUID;
-                            //                    PARTMARK_TO_RETAIN.Add(ID);
-
-
-
-                            //                    //if (Convert.ToInt64(x_value) >= Convert.ToInt64(p1[1].X))
-                            //                    //{
-                            //                    //    ptlist_for_attachments_top.Add(new TSG.Point(bounding_box_x[1].X, bounding_box_y[1].Y, bounding_box_y[0].Z));
-                            //                    //}
-                            //                    //else if (Convert.ToInt64(x_value) <= Convert.ToInt64(p1[0].X))
-                            //                    //{
-                            //                    //    ptlist_for_attachments_top.Add(new TSG.Point(bounding_box_x[0].X, bounding_box_y[1].Y, bounding_box_y[0].Z));
-                            //                    //}
-                            //                    //else
-                            //                    //{
-                            //                    //    ptlist_for_attachments_top.Add(new TSG.Point(bounding_box_x[0].X, bounding_box_y[1].Y, bounding_box_y[0].Z));
-                            //                    //}
-
-                            //                }
-                            //                else if (!mw1.Identifier.ID.Equals(plate.Identifier.ID))
-                            //                {
-
-
-
-                            //                    double x_value = 0;
-                            //                    string prof_type_for_channel_check = "";
-                            //                    mw1.GetReportProperty("PROFILE_TYPE", ref prof_type_for_channel_check);
-
-                            //                    if (prof_type_for_channel_check != "U")
-                            //                    {
-                            //                        TSG.Matrix tokkk = TSG.MatrixFactory.ToCoordinateSystem(current_view.ViewCoordinateSystem);
-                            //                        TSG.CoordinateSystem kl = mw1.GetCoordinateSystem();
-
-
-                            //                        TSG.Point pz = tokkk.Transform(kl.Origin);
-                            //                        x_value = pz.X;
-                            //                    }
-                            //                    else
-                            //                    {
-                            //                        TSG.CoordinateSystem channel_coord = mw1.GetCoordinateSystem();
-                            //                        model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(channel_coord));
-                            //                        List<double> catalog_values_for_channel = catalogHandler.Getcatalog_values(mw1);
-                            //                        double offset = (catalog_values_for_channel[1]);
-                            //                        TSG.CoordinateSystem kl = new TSG.CoordinateSystem();
-                            //                        kl.Origin = new TSG.Point(0, 0, -offset / 2);
-
-
-
-                            //                        model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
-
-
-                            //                        TSG.Point pz = drawingHandler.converted_points_FOR_CHANNEL(model, kl.Origin, mw1 as TSM.Beam, current_view);
-
-
-                            //                        x_value = pz.X;
-
-                            //                        model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
-                            //                    }
-                            //                    TSG.Point face_point_for_angle_bswelded = facePointHandler.GetFacePoint_for_angle_bothside_weldedlogic_top(plate, current_view);
-                            //                    ptlist_for_attachments_top.Add(new TSG.Point(face_point_for_angle_bswelded.X, bounding_box_y[1].Y, bounding_box_y[0].Z));
-                            //                    Guid ID = plate.Identifier.GUID;
-                            //                    PARTMARK_TO_RETAIN.Add(ID);
-
-                            //                }
-
-                            //                else
-                            //                {
-                            //                    //  ptlist_for_attachments_top.Add(new TSG.Point(bounding_box_x[0].X, bounding_box_y[1].Y, bounding_box_y[0].Z));
-                            //                }
-
-                            //            }
-                            //        }
-
-
-                            //        else
-                            //        {
-                            //            TSG.Point face_point_for_angle_bswelded = facePointHandler.GetFacePoint_for_angle_bothside_weldedlogic_top(plate, current_view);
-                            //            ptlist_for_attachments_top.Add(new TSG.Point(face_point_for_angle_bswelded.X, bounding_box_y[1].Y, bounding_box_y[0].Z));
-                            //            Guid ID = plate.Identifier.GUID;
-                            //            PARTMARK_TO_RETAIN.Add(ID);
-
-                            //        }
-
-
-
-                            //    }
-                            //    else
-                            //    {
-
-
-
-
-
-
-
-                            //    }
-
-                            //    # region angle_3.5_dim
-
-                            //    //TSD.PointList angle_3_5_dim = new TSD.PointList();
-
-                            //    //TSM.Model mymodel = new TSM.Model();
-                            //    //mymodel.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.ViewCoordinateSystem));
-                            //    //TSG.CoordinateSystem angle_coord = plate.GetCoordinateSystem();
-                            //    //mymodel.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
-
-
-                            //    //if ((profile_type == "U") && (Convert.ToInt64(angle_coord.AxisX.X) == 0))
-                            //    //{
-                            //    //    model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(current_view.DisplayCoordinateSystem));
-                            //    //    TSG.Vector zvector = main_part.GetCoordinateSystem().AxisX.Cross(main_part.GetCoordinateSystem().AxisY);
-                            //    //    model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
-
-                            //    //    zvector.Normalize();
-                            //    //    double WT = 0;
-
-
-                            //    //    double WT2 = (catalog_values[1]);
-                            //    //    if (zvector.Y > 0)
-                            //    //    {
-                            //    //        WT = (-WT2 / 2);
-                            //    //    }
-                            //    //    else
-                            //    //    {
-                            //    //        WT = (WT2 / 2);
-                            //    //    }
-
-                            //    //    if (Convert.ToInt64(bounding_box_y[0].Y) >= Convert.ToInt64(WT))
-                            //    //    {
-                            //    //        TSG.Point p1 = new TSG.Point();
-                            //    //        p1 = new TSG.Point(bounding_box_y[1].X, bounding_box_y[0].Y, 0);
-                            //    //        TSG.Point p2 = new TSG.Point();
-                            //    //        p2 = new TSG.Point(bounding_box_y[0].X, bounding_box_y[0].Y, 0);
-                            //    //        if (bounding_box_x[1].X > output)
-                            //    //        {
-                            //    //            angle_3_5_dim.Add(p2);
-                            //    //            angle_3_5_dim.Add(p1);
-
-
-                            //    //        }
-                            //    //        else
-                            //    //        {
-                            //    //            angle_3_5_dim.Add(p1);
-                            //    //            angle_3_5_dim.Add(p2);
-                            //    //        }
-                            //    //        double dist = Math.Abs(current_view.RestrictionBox.MaxPoint.Y) - Math.Abs(angle_3_5_dim[0].Y);
-                            //    //        TSD.StraightDimensionSetHandler dim_for_3_5 = new TSD.StraightDimensionSetHandler();
-                            //    //        TSD.StraightDimensionSet.StraightDimensionSetAttributes att = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                            //    //        att.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                            //    //        att.ExtensionLine = TSD.DimensionSetBaseAttributes.ExtensionLineTypes.No;
-                            //    //        try
-                            //    //        {
-                            //    //            dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, new TSG.Vector(0, 1, 0), dist + 50 + Math.Abs(WT), att);
-                            //    //        }
-                            //    //        catch
-                            //    //        {
-                            //    //        }
-                            //    //    }
-                            //    //    if (Convert.ToInt64(bounding_box_y[1].Y) <= Convert.ToInt64(WT))
-                            //    //    {
-                            //    //        TSG.Point p1 = new TSG.Point();
-                            //    //        p1 = new TSG.Point(bounding_box_y[1].X, bounding_box_y[1].Y, 0);
-                            //    //        TSG.Point p2 = new TSG.Point();
-                            //    //        p2 = new TSG.Point(bounding_box_y[0].X, bounding_box_y[1].Y, 0);
-                            //    //        if (bounding_box_x[1].X > output)
-                            //    //        {
-                            //    //            angle_3_5_dim.Add(p2);
-                            //    //            angle_3_5_dim.Add(p1);
-
-
-                            //    //        }
-                            //    //        else
-                            //    //        {
-                            //    //            angle_3_5_dim.Add(p1);
-                            //    //            angle_3_5_dim.Add(p2);
-                            //    //        }
-                            //    //        double dist = Math.Abs(current_view.RestrictionBox.MinPoint.Y) - Math.Abs(angle_3_5_dim[0].Y);
-                            //    //        TSD.StraightDimensionSetHandler dim_for_3_5 = new TSD.StraightDimensionSetHandler();
-                            //    //        TSD.StraightDimensionSet.StraightDimensionSetAttributes att = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                            //    //        att.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                            //    //        att.ExtensionLine = TSD.DimensionSetBaseAttributes.ExtensionLineTypes.No;
-                            //    //        try
-                            //    //        {
-                            //    //            dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, new TSG.Vector(0, -1, 0), dist + 50 + Math.Abs(WT), att);
-                            //    //        }
-                            //    //        catch
-                            //    //        {
-                            //    //        }
-                            //    //    }
-                            //    //}
-
-                            //    //else if ((Convert.ToInt64(angle_coord.AxisX.X) == 0))
-                            //    //{
-                            //    //    if (Convert.ToInt64(bounding_box_y[0].Y) > 0)
-                            //    //    {
-                            //    //        TSG.Point p1 = new TSG.Point();
-                            //    //        p1 = new TSG.Point(bounding_box_y[1].X, bounding_box_y[0].Y, 0);
-                            //    //        TSG.Point p2 = new TSG.Point();
-                            //    //        p2 = new TSG.Point(bounding_box_y[0].X, bounding_box_y[0].Y, 0);
-
-                            //    //        if (bounding_box_x[1].X > output)
-                            //    //        {
-                            //    //            angle_3_5_dim.Add(p2);
-                            //    //            angle_3_5_dim.Add(p1);
-
-
-                            //    //        }
-                            //    //        else
-                            //    //        {
-                            //    //            angle_3_5_dim.Add(p1);
-                            //    //            angle_3_5_dim.Add(p2);
-                            //    //        }
-                            //    //        double dist = Math.Abs(current_view.RestrictionBox.MaxPoint.Y) - Math.Abs(angle_3_5_dim[0].Y);
-                            //    //        TSD.StraightDimensionSetHandler dim_for_3_5 = new TSD.StraightDimensionSetHandler();
-                            //    //        TSD.StraightDimensionSet.StraightDimensionSetAttributes att = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                            //    //        att.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                            //    //        att.ExtensionLine = TSD.DimensionSetBaseAttributes.ExtensionLineTypes.No;
-
-                            //    //        try
-                            //    //        {
-                            //    //            dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, new TSG.Vector(0, 1, 0), dist + 50, att);
-                            //    //        }
-                            //    //        catch
-                            //    //        {
-                            //    //        }
-                            //    //    }
-                            //    //    if (Convert.ToInt64(bounding_box_y[1].Y) < 0)
-                            //    //    {
-                            //    //        TSG.Point p1 = new TSG.Point();
-                            //    //        p1 = new TSG.Point(bounding_box_y[1].X, bounding_box_y[1].Y, 0);
-                            //    //        TSG.Point p2 = new TSG.Point();
-                            //    //        p2 = new TSG.Point(bounding_box_y[0].X, bounding_box_y[1].Y, 0);
-                            //    //        if (bounding_box_x[1].X > output)
-                            //    //        {
-                            //    //            angle_3_5_dim.Add(p2);
-                            //    //            angle_3_5_dim.Add(p1);
-
-
-                            //    //        }
-                            //    //        else
-                            //    //        {
-                            //    //            angle_3_5_dim.Add(p1);
-                            //    //            angle_3_5_dim.Add(p2);
-                            //    //        }
-                            //    //        double dist = Math.Abs(current_view.RestrictionBox.MinPoint.Y) - Math.Abs(angle_3_5_dim[0].Y);
-                            //    //        TSD.StraightDimensionSetHandler dim_for_3_5 = new TSD.StraightDimensionSetHandler();
-                            //    //        TSD.StraightDimensionSet.StraightDimensionSetAttributes att = new TSD.StraightDimensionSet.StraightDimensionSetAttributes();
-                            //    //        att.Placing.Placing = TSD.DimensionSetBaseAttributes.Placings.Fixed;
-                            //    //        att.ExtensionLine = TSD.DimensionSetBaseAttributes.ExtensionLineTypes.No;
-                            //    //        try
-                            //    //        {
-                            //    //            dim_for_3_5.CreateDimensionSet(current_view, angle_3_5_dim, new TSG.Vector(0, -1, 0), dist + 50, att);
-                            //    //        }
-                            //    //        catch
-                            //    //        {
-                            //    //        }
-                            //    //    }
-                            //    //}
-                            //    # endregion
-
-                            //}
-
-
-
-                        }
+                          }
                     }
 
                     else
@@ -1617,6 +1246,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
             }
             ///////////////////////////////////END FOR PLATE ///////////////////////////////////////////////////////////////////////////////
         }
+
         public void CreateDimensionOutsideFlange(TSM.Beam main_part, TSD.View current_view, double output, ref List<Guid> PARTMARK_TO_RETAIN, string drg_att)
         {
 
@@ -1820,7 +1450,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                             model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
 
 
-                                            TSG.Point pz = drawingHandler.ConvertedPointsForChannel(model,  current_view);
+                                            TSG.Point pz = ConvertedPointsForChannel(model,  current_view);
 
 
                                             x_value = pz.X;
@@ -1951,7 +1581,7 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
                                             model.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane(kl));
 
 
-                                            TSG.Point pz = drawingHandler.ConvertedPointsForChannel(model, current_view);
+                                            TSG.Point pz = ConvertedPointsForChannel(model, current_view);
 
 
                                             x_value = pz.X;
@@ -3328,5 +2958,25 @@ namespace SK.Tekla.Drawing.Automation.Drawing.Dimensions
 
             return result;
         }
+
+
+        private TSG.Point ConvertedPointsForChannel(TSM.Model mymodel, TSD.View current_view)
+        {
+            TSG.Point point = new TSG.Point(0, 0, 0);
+            TSG.Matrix toglobal = mymodel.GetWorkPlaneHandler().GetCurrentTransformationPlane().TransformationMatrixToGlobal;
+
+
+            TSG.Point mtpt = toglobal.Transform(point);
+
+
+            TSG.Matrix toviewpart1 = TSG.MatrixFactory.ToCoordinateSystem(current_view.DisplayCoordinateSystem);
+
+            TSG.Point mtpt1 = toviewpart1.Transform(mtpt);
+
+            return mtpt1;
+
+
+        }
+
     }
 }
