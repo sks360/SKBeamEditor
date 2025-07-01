@@ -85,7 +85,7 @@ namespace SK.Tekla.Drawing.Automation.Services
             facePointHandler = new SKFacePointHandler(boundingBoxHandler, _inputModel);
 
             duplicateRemover = new DuplicateRemover(sortingHandler);
-            drawingHandler = new SKDrawingHandler(boundingBoxHandler, catalogHandler, _inputModel);
+            drawingHandler = new SKDrawingHandler(boundingBoxHandler, _inputModel);
             boltMatrixHandler = new BoltMatrixHandler(sortingHandler, catalogHandler);
         }
 
@@ -266,18 +266,29 @@ namespace SK.Tekla.Drawing.Automation.Services
                             currentBeam, defaultADFile, main_part, output, ASSEMBLY,
                              SCALE, MINI_LEN);
 
-                        List<SectionLocationWithParts> list = drawingHandler.list2;
+                        List<SectionLocationWithParts> list = drawingHandler.SectionLocationList;
 
                         _logger.Debug($"list: {list.Count}");
 
                         list.ForEach(_logger.Debug);
                         list.ForEach(Console.WriteLine);
 
-                        List<SectionLocationWithParts> list_section_flange = drawingHandler.list_for_flange_section;
+                        List<SectionLocationWithParts> list_section_flange = drawingHandler.FlangeSectionLocationList;
 
-                        List<TSM.Part> list_of_parts_for_bottom_view_mark_retain = drawingHandler.list_of_parts_for_bottom_part_mark_retain;
+                        Console.WriteLine("---------list_section_flange-------------");
+                        list_section_flange.ForEach(Console.WriteLine);
+                        Console.WriteLine("-----------------------------------------");
 
-                        List<TSD.RadiusDimension> list_of_radius = drawingHandler.radiusDimensionList;
+                        List<TSM.Part> list_of_parts_for_bottom_view_mark_retain = drawingHandler.BottomPartsForMarkRetainList;
+
+                        Console.WriteLine("---------list_of_parts_for_bottom_view_mark_retain-------------");
+                        list_of_parts_for_bottom_view_mark_retain.ForEach(Console.WriteLine);
+                        Console.WriteLine("-----------------------------------------");
+
+                        List<TSD.RadiusDimension> list_of_radius = drawingHandler.RadiusDimensionList;
+
+                        Console.WriteLine($"---------list_of_radius-----{list_of_radius.Count}--------");
+                        Console.WriteLine("-----------------------------------------");
 
                         SECTION_CREATION.Stop();
                         #endregion

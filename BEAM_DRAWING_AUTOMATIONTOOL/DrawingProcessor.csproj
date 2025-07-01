@@ -306,6 +306,7 @@
     <Compile Include="Drawing\Views\FixFreeSpace.cs" />
     <Compile Include="Drawing\Views\SKBottomView.cs" />
     <Compile Include="Drawing\Views\SKSectionFlangeBuilder.cs" />
+    <Compile Include="Drawing\Views\SKSectionViewBuilder.cs" />
     <Compile Include="Drawing\Views\SKTopViewBuilderOld.cs" />
     <Compile Include="Drawing\Views\SKSectionView.cs" />
     <Compile Include="Drawing\Views\SKSectionViewOld.cs" />

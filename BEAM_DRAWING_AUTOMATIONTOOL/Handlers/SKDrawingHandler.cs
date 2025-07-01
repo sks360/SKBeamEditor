@@ -1,96 +1,86 @@
-﻿using System;
+﻿using SK.Tekla.Drawing.Automation.Models;
+using SK.Tekla.Drawing.Automation.Support;
+using SK.Tekla.Drawing.Automation.Utils;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using TSG = Tekla.Structures.Geometry3d;
-using TSD = Tekla.Structures.Drawing;
-using TSM = Tekla.Structures.Model;
-using Tekla.Structures.Model.UI;
-using Tekla.Structures.Catalogs;
-using TSS = Tekla.Structures.Solid;
-using System.Collections;
-using SK.Tekla.Drawing.Automation.Support;
 using Tekla.Structures.Drawing;
-using SK.Tekla.Drawing.Automation.Utils;
-using Tekla.Structures.Geometry3d;
-using SK.Tekla.Drawing.Automation.Models;
-using static SK.Tekla.Drawing.Automation.Handlers.SKSortingHandler;
-using Tekla.Structures;
+using Tekla.Structures.Model;
+using TSD = Tekla.Structures.Drawing;
+using TSG = Tekla.Structures.Geometry3d;
+using TSM = Tekla.Structures.Model;
 
 namespace SK.Tekla.Drawing.Automation.Handlers
 {
     public class SKDrawingHandler
     {
+        // Constants for magic numbers
+        private const double MinDistanceForSection = 125;
+        private const double MinDistanceForFlangeSection = 25;
+        private const double MaxDistanceForDepth = 300;
+        private const double ViewExtension = 100;
+        private const double RestrictionBoxOffset = 65;
+        private const double FontHeight = 3.96875;
+
         private readonly CustomInputModel _userInput;
         private readonly SKBoundingBoxHandler _boundingBoxHandler;
 
-        private readonly SKCatalogHandler _catalogHandler;
+        public List<SectionLocationWithParts> SectionLocationList { get; set; } = new List<SectionLocationWithParts> { };
 
-        public List<SectionLocationWithParts> list2 { get; set; } = new List<SectionLocationWithParts> { };
+        public List<SectionLocationWithParts> FlangeSectionLocationList { get; set; } = new List<SectionLocationWithParts> { };
 
-        public List<SectionLocationWithParts> list_for_flange_section { get; set; } = new List<SectionLocationWithParts> { };
-
-        public List<TSM.Part> list_of_parts_for_bottom_part_mark_retain { get; set; } = new List<TSM.Part>();
+        public List<TSM.Part> BottomPartsForMarkRetainList { get; set; } = new List<TSM.Part>();
 
 
-        public List<TSD.RadiusDimension> radiusDimensionList { get; set; } = new List<RadiusDimension> { };
+        public List<TSD.RadiusDimension> RadiusDimensionList { get; set; } = new List<RadiusDimension> { };
 
 
-        public SKDrawingHandler(SKBoundingBoxHandler boundingBoxHandler,
-            SKCatalogHandler catalogHandler, CustomInputModel userInput)
+        public SKDrawingHandler(SKBoundingBoxHandler boundingBoxHandler,  CustomInputModel userInput)
         {
-            _boundingBoxHandler = boundingBoxHandler;
-            _catalogHandler = catalogHandler;
-            _userInput = userInput;
+            _boundingBoxHandler = boundingBoxHandler ?? throw new ArgumentNullException(nameof(boundingBoxHandler));
+            _userInput = userInput ?? throw new ArgumentNullException(nameof(userInput));
         }
 
 
-
-        public TSD.AssemblyDrawing ResetDrawingDimensionsExceptAssemblyDimensions(TSM.Model mymodel,
-            TSM.ModelObject currentBeam, string drg_attribute,
-            TSM.Part main_part, double output, TSM.Assembly ASSEMBLY, double SCALE,
-            double MINI_LENGTH)
+        #region public methods
+        public TSD.AssemblyDrawing ResetDrawingDimensionsExceptAssemblyDimensions(TSM.Model currentModel,
+            TSM.ModelObject currentBeam, string drgAttribute,
+            TSM.Part mainPart, double output, TSM.Assembly currentAssembly, double scale,
+            double minLength)
         {
+            if (!(mainPart is TSM.Beam mainBeam))
+                throw new ArgumentException("Main part must be a beam.", nameof(mainPart));
 
-            TSD.DrawingHandler drg_handler = new TSD.DrawingHandler();
+
             //reset the values for each drawing!!!!
 
-            list2 = new List<SectionLocationWithParts>();
-            list_for_flange_section = new List<SectionLocationWithParts>();
-            list_of_parts_for_bottom_part_mark_retain = new List<TSM.Part>();
-            radiusDimensionList = new List<TSD.RadiusDimension>();
+            ResetLists();
 
+            AssemblyDrawing skAssemblyDrawing = CreateAssemblyDrawing(drgAttribute, currentAssembly);
 
-
-            TSD.AssemblyDrawing skAssemblyDrawing = new TSD.AssemblyDrawing(ASSEMBLY.Identifier, drg_attribute);
-            skAssemblyDrawing.Insert();
-            drg_handler.SetActiveDrawing(skAssemblyDrawing, true);
-
-            ModifyViewToScale(SCALE, MINI_LENGTH, skAssemblyDrawing);
+            ModifyViewToScale(scale, minLength, skAssemblyDrawing);
 
             var drawingViews = skAssemblyDrawing.GetSheet().GetAllViews();
 
-            double mainPartHeight = 0;
-            main_part.GetReportProperty("HEIGHT", ref mainPartHeight);
+            double mainPartHeight = GetPartHeight(mainPart);
             var heightPosNeg = mainPartHeight / 2;
 
             //////////////////Enumerating different views/////////////////////////////
             while (drawingViews.MoveNext())
             {
                 TSD.View currentView = drawingViews.Current as TSD.View;
-                DeleteViewDimensionByType(currentView, ASSEMBLY);
+                DeleteViewDimensionByType(currentView, currentAssembly);
                 if (currentView.ViewType.Equals(TSD.View.ViewTypes.FrontView))
                 {
-                    radiusDimensionList = ExtractRadiusDimension(currentView);
+                    RadiusDimensionList = ExtractRadiusDimension(currentView);
                 }
             }
             drawingViews.Reset();
 
             //transform the plane to Global to get model parts
-            mymodel.GetWorkPlaneHandler().SetCurrentTransformationPlane
-                (new TSM.TransformationPlane(main_part.GetCoordinateSystem()));
+            currentModel.GetWorkPlaneHandler().SetCurrentTransformationPlane
+                (new TSM.TransformationPlane(mainPart.GetCoordinateSystem()));
             ArrayList fvMPartList = new ArrayList();
 
             TSD.DrawingObjectEnumerator enumForParts = skAssemblyDrawing.GetSheet().GetAllViews();
@@ -99,36 +89,36 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                 TSD.View current_view = enumForParts.Current as TSD.View;
                 if (current_view.ViewType.Equals(TSD.View.ViewTypes.FrontView))
                 {
-                    fvMPartList = GetFrontViewParts(main_part, current_view);
+                    fvMPartList = GetFrontViewParts(mainPart, current_view);
                 }
             }
 
 
-            mymodel.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
+            currentModel.GetWorkPlaneHandler().SetCurrentTransformationPlane(new TSM.TransformationPlane());
 
 
             TSD.DrawingObjectEnumerator placeViewEnum = skAssemblyDrawing.GetSheet().GetAllViews();
-            List<List<int>> MYLIST = new List<List<int>>();
-            List<RequiredPartPoints> mypoints1 = new List<RequiredPartPoints>();
-            List<RequiredPartPoints> mypoints1_duplicate = new List<RequiredPartPoints>();
-            List<RequiredPartPoints> mypoints_duplicate_for_dimension = new List<RequiredPartPoints>();
-            List<int> list_ide = new List<int>();
+            //List<List<int>> MYLIST = new List<List<int>>();
+            List<RequiredPartPoints> partsOutsideHeight = new List<RequiredPartPoints>();
+            List<RequiredPartPoints> partsOutsideHeightDuplicate = new List<RequiredPartPoints>();
+            List<RequiredPartPoints> partsForDimension = new List<RequiredPartPoints>();
+            List<int> partIdsOutsideHeight = new List<int>();
 
             while (placeViewEnum.MoveNext())
             {
-                TSD.View current_view = placeViewEnum.Current as TSD.View;
-                if (current_view.ViewType.Equals(TSD.View.ViewTypes.FrontView))
+                TSD.View currentView = placeViewEnum.Current as TSD.View;
+                if (currentView.ViewType.Equals(TSD.View.ViewTypes.FrontView))
                 {
-                    List<RequiredPartPoints> mypoints = new List<RequiredPartPoints>();
+                    List<RequiredPartPoints> partsInHeight = new List<RequiredPartPoints>();
 
                     foreach (TSM.Part mPart in fvMPartList)
                     {
-                        TSD.PointList pmPts = _boundingBoxHandler.BoundingBoxSort(mPart, main_part as TSM.Beam);
+                        TSD.PointList pmPts = _boundingBoxHandler.BoundingBoxSort(mPart, mainPart as TSM.Beam);
                         Console.WriteLine($"0th record: x: {pmPts[0].X}  y: {pmPts[0].Y}  z: {pmPts[0].Z}");
                         Console.WriteLine($"1st record: x: {pmPts[1].X}  y: {pmPts[1].Y}  z: {pmPts[1].Z}");
                         TSM.Part mypart = mPart;
 
-                        TSD.PointList pvPts = ConvertToViewPoints(pmPts, main_part as TSM.Beam, current_view);
+                        TSD.PointList pvPts = ConvertToViewPoints(pmPts, mainPart as TSM.Beam, currentView);
                         Console.WriteLine($"m1 0th record: x: {pvPts[0].X}  y: {pvPts[0].Y}  z: {pvPts[0].Z}");
                         Console.WriteLine($"m1 1st record: x: {pvPts[1].X}  y: {pvPts[1].Y}  z: {pvPts[1].Z}");
                         RequiredPartPoints requiredPart =
@@ -143,47 +133,103 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                                 ID = mPart.Identifier.ID
                             };
 
-
-
-                        if (((pmPts[0].Y > -heightPosNeg) && (pmPts[1].Y < heightPosNeg)) || ((pmPts[0].Y < -heightPosNeg) && (pmPts[1].Y > heightPosNeg)))
+                        partsForDimension.Add(requiredPart);
+                        //((pmPts[0].Y > -heightPosNeg) && (pmPts[1].Y < heightPosNeg)) || ((pmPts[0].Y < -heightPosNeg) && (pmPts[1].Y > heightPosNeg))
+                        if (IsPartWithinHeight(pmPts, heightPosNeg))
                         {
-                            mypoints.Add(requiredPart);
-                            mypoints_duplicate_for_dimension.Add(requiredPart);
+                            partsInHeight.Add(requiredPart);
                         }
                         else
                         {
-                            list_ide.Add(mypart.Identifier.ID);
-                            mypoints1.Add(requiredPart);
-                            mypoints1_duplicate.Add(requiredPart);
-                            mypoints_duplicate_for_dimension.Add(requiredPart);
+                            partIdsOutsideHeight.Add(mypart.Identifier.ID);
+                            partsOutsideHeight.Add(requiredPart);
+                            partsOutsideHeightDuplicate.Add(requiredPart);
+
                             if ((Convert.ToInt64(pmPts[0].Y) <= -Convert.ToInt64(heightPosNeg)) && (Convert.ToInt64(pmPts[1].Y) <= -Convert.ToInt64(heightPosNeg)))
                             {
-                                list_of_parts_for_bottom_part_mark_retain.Add(mPart);
+                                BottomPartsForMarkRetainList.Add(mPart);
                             }
                         }
                     }
-                    Console.WriteLine($"mypoints: {mypoints.Count}");
-                    mypoints.ForEach(Console.WriteLine);
+                    Console.WriteLine($"partsInHeight: {partsInHeight.Count}");
+                    partsInHeight.ForEach(Console.WriteLine);
 
-                    Console.WriteLine($"mypoints1: {mypoints1.Count}");
-                    mypoints1.ForEach(Console.WriteLine);
+                    Console.WriteLine($"(partsOutsideHeight) mypoints1: {partsOutsideHeight.Count}");
+                    partsOutsideHeight.ForEach(Console.WriteLine);
 
-                    AdjustRestrictionBox(mypoints1, current_view);
+                    AdjustRestrictionBox(partsOutsideHeight, currentView);
 
-                    GetFrontViewPoints(drg_attribute, main_part, mainPartHeight, MYLIST, current_view, mypoints);
-
+                    List<List<int>> MYLIST = PrepareSectionsInHeight(drgAttribute, mainPart, mainPartHeight, currentView, partsInHeight);
+                    PrepareFlangeSectionsOutsideHeight(drgAttribute, mainPart, skAssemblyDrawing, MYLIST, partsOutsideHeight,
+                            partsOutsideHeightDuplicate, partIdsOutsideHeight);
                 }
                 skAssemblyDrawing.PlaceViews();
             }
 
-            GetFlangeSections(drg_attribute, main_part, skAssemblyDrawing, MYLIST, mypoints1, mypoints1_duplicate, list_ide);
+
             skAssemblyDrawing.CommitChanges();
             //drg_handler.CloseActiveDrawing(true);
             //skAssemblyDrawing.Delete();
             return skAssemblyDrawing;
         }
 
+        #endregion
+
         #region private methods
+
+        /// <summary>
+        /// Check whether the points are within the height based of the main part
+        /// </summary>
+        /// <param name="points"></param>
+        /// <param name="heightPosNeg"></param>
+        /// <returns></returns>
+        private bool IsPartWithinHeight(TSD.PointList points, double heightPosNeg)
+        {
+            //TODO: Check with Viswa
+            //((pmPts[0].Y > -heightPosNeg) && (pmPts[1].Y < heightPosNeg)) || ((pmPts[0].Y < -heightPosNeg) && (pmPts[1].Y > heightPosNeg))
+            double minY = points[0].Y;
+            double maxY = points[1].Y;
+            return (minY > -heightPosNeg && maxY < heightPosNeg) || (minY < -heightPosNeg && maxY > heightPosNeg);
+        }
+
+        /// <summary>
+        /// Get the height of the given part
+        /// </summary>
+        /// <param name="part"></param>
+        /// <returns></returns>
+        private double GetPartHeight(TSM.Part part)
+        {
+            double height = 0;
+            part.GetReportProperty("HEIGHT", ref height);
+            return height;
+        }
+
+        /// <summary>
+        /// Create the assembly drawing
+        /// </summary>
+        /// <param name="drgAttribute"></param>
+        /// <param name="currentAssembly"></param>
+        /// <returns></returns>
+        private AssemblyDrawing CreateAssemblyDrawing(string drgAttribute, Assembly currentAssembly)
+        {
+            TSD.DrawingHandler drgHandler = new TSD.DrawingHandler();
+            TSD.AssemblyDrawing skAssemblyDrawing = new TSD.AssemblyDrawing(currentAssembly.Identifier, drgAttribute);
+            skAssemblyDrawing.Insert();
+            drgHandler.SetActiveDrawing(skAssemblyDrawing, true);
+            return skAssemblyDrawing;
+        }
+
+        /// <summary>
+        /// Reset the list for each assembly
+        /// </summary>
+        private void ResetLists()
+        {
+            SectionLocationList = new List<SectionLocationWithParts>();
+            FlangeSectionLocationList = new List<SectionLocationWithParts>();
+            BottomPartsForMarkRetainList = new List<TSM.Part>();
+            RadiusDimensionList = new List<TSD.RadiusDimension>();
+        }
+
         /// <summary>
         /// Modify current view's restriction box
         /// </summary>
@@ -213,360 +259,138 @@ namespace SK.Tekla.Drawing.Automation.Handlers
         }
 
 
-        
-        private void GetFlangeSections(string drg_attribute, TSM.Part main_part, AssemblyDrawing skAssemblyDrawing, List<List<int>> MYLIST, List<RequiredPartPoints> mypoints1, List<RequiredPartPoints> mypoints1_duplicate, List<int> list_ide)
+        /// <summary>
+        /// Get the Flange Sections
+        /// </summary>
+        /// <param name="drgAttribute"></param>
+        /// <param name="mainPart"></param>
+        /// <param name="skAssemblyDrawing"></param>
+        /// <param name="sectionPartIdList"></param>
+        /// <param name="partsOutsideHeight"></param>
+        /// <param name="partsOutsideHeightDuplicate"></param>
+        /// <param name="partIdsOutsideHeight"></param>
+        private void PrepareFlangeSectionsOutsideHeight(string drgAttribute, TSM.Part mainPart, AssemblyDrawing skAssemblyDrawing,
+            List<List<int>> sectionPartIdList, List<RequiredPartPoints> partsOutsideHeight,
+            List<RequiredPartPoints> partsOutsideHeightDuplicate, List<int> partIdsOutsideHeight)
         {
-            TSD.DrawingObjectEnumerator enum_for_flange_sect = skAssemblyDrawing.GetSheet().GetAllViews();
-            while (enum_for_flange_sect.MoveNext())
+            TSD.DrawingObjectEnumerator viewsEnum = skAssemblyDrawing.GetSheet().GetAllViews();
+            while (viewsEnum.MoveNext())
             {
-
-
-                TSD.View current_view = enum_for_flange_sect.Current as TSD.View;
-                if (current_view.ViewType.Equals(TSD.View.ViewTypes.FrontView))
+                TSD.View currentView = viewsEnum.Current as TSD.View;
+                if (currentView.ViewType.Equals(TSD.View.ViewTypes.FrontView))
                 {
-                    List<List<int>> final_result = new List<List<int>>();
-                    foreach (List<int> myllist in MYLIST)
+                    List<List<int>> uniqueIdList = new List<List<int>>();
+                    foreach (List<int> idList in sectionPartIdList)
                     {
 
-                        List<int> dup_list = myllist.Intersect(list_ide).ToList();
-                        final_result.Add(dup_list);
-
-
-
+                        List<int> dupList = idList.Intersect(partIdsOutsideHeight).ToList();
+                        uniqueIdList.Add(dupList);
                     }
 
 
-                    foreach (List<int> section_list in final_result)
+                    foreach (List<int> sectionIdList in uniqueIdList)
                     {
-                        for (int p = 0; p < mypoints1.Count; p++)
+                        for (int p = 0; p < partsOutsideHeight.Count; p++)
                         {
-                            bool result = section_list.Any(x => x.Equals(mypoints1[p].part.Identifier.ID));
-                            if (result == true)
+                            bool result = sectionIdList.Any(x => x.Equals(partsOutsideHeight[p].part.Identifier.ID));
+                            if (result)
                             {
-                                mypoints1_duplicate.RemoveAll(x => x.part.Identifier.ID.Equals(mypoints1[p].part.Identifier.ID));
+                                partsOutsideHeightDuplicate.RemoveAll(x => x.part.Identifier.ID.Equals(partsOutsideHeight[p].part.Identifier.ID));
                             }
                         }
 
                     }
-                    if (mypoints1_duplicate.Count > 0)
+                    if (partsOutsideHeightDuplicate.Count > 0)
                     {
-
-
-
-                        CompareSectionViews(mypoints1_duplicate, current_view, main_part, MYLIST, skAssemblyDrawing, drg_attribute);
-
+                        CompareFlangeSectionViews(partsOutsideHeightDuplicate, currentView, mainPart, skAssemblyDrawing, drgAttribute);
                     }
 
                     else
                     {
-                        list_for_flange_section = new List<SectionLocationWithParts>();
-
-
+                        FlangeSectionLocationList = new List<SectionLocationWithParts>();
                     }
                 }
             }
         }
 
-        private void GetFrontViewPoints(string drg_attribute, TSM.Part main_part,
-            double height, List<List<int>> MYLIST, TSD.View current_view, List<RequiredPartPoints> mypoints)
+        /// <summary>
+        /// Prepare sections that are within the view height
+        /// </summary>
+        /// <param name="drgAttribute"></param>
+        /// <param name="mainPart"></param>
+        /// <param name="height"></param>
+        /// <param name="curentView"></param>
+        /// <param name="partsInHeight"></param>
+        /// <returns></returns>
+        private List<List<int>> PrepareSectionsInHeight(string drgAttribute, TSM.Part mainPart,
+            double height, TSD.View curentView, List<RequiredPartPoints> partsInHeight)
         {
-            mypoints = mypoints.OrderBy(x => x.distanceX).ToList();
+            List<List<int>> sectionPartIds = new List<List<int>>();
+            partsInHeight = partsInHeight.OrderBy(x => x.distanceX).ToList();
 
-            SectionLocationWithParts obj1 = new SectionLocationWithParts();
-            List<TSM.Part> list1 = new List<TSM.Part>();
-
-
-            for (int i = 0; i < mypoints.Count; i++)
+            List<TSM.Part> currentParts = new List<TSM.Part>();
+ 
+            for (int i = 0; i < partsInHeight.Count; i++)
             {
-
-                if (i == Convert.ToInt16(mypoints.Count - 1))
+                currentParts.Add(partsInHeight[i].part);
+                if (i == partsInHeight.Count - 1 || (partsInHeight[i + 1].distanceX - partsInHeight[i].distanceX) > MinDistanceForSection)
                 {
-                    list1.Add(mypoints[i].part);
-                    list2.Add(new SectionLocationWithParts() { PartList = list1, Distance = mypoints[i].distanceX });
-
-                }
-                else
-                {
-                    double ditsnace = (Convert.ToInt16(mypoints[i + 1].distanceX) - Convert.ToInt16(mypoints[i].distanceX));
-                    //if (ditsnace > 25)
-                    if (ditsnace > 125)
+                    SectionLocationList.Add(new SectionLocationWithParts
                     {
-
-                        list1.Add(mypoints[i].part);
-                        list2.Add(new SectionLocationWithParts() { PartList = list1, Distance = mypoints[i].distanceX });
-                        list1 = new List<TSM.Part>();
-                    }
-
-                    else
-                    {
-                        list1.Add(mypoints[i].part);
-
-                    }
+                        PartList = new List<TSM.Part>(currentParts),
+                        Distance = partsInHeight[i].distanceX
+                    });
+                    currentParts.Clear();
                 }
             }
 
-            List<TSM.Part> final_list = new List<TSM.Part>();
-            List<SectionLocationWithParts> f1 = new List<SectionLocationWithParts>();
-            List<SectionLocationWithParts> f2 = new List<SectionLocationWithParts>();
+            MarkUniqueSections(SectionLocationList, mainPart);
 
+            SectionLocationList = SectionLocationList.OrderBy(x => x.Distance).ToList();
 
-            List<SectionLocationWithParts> FINAL = list2.GroupBy(X => X.PartList.Count).Select(Y => Y.FirstOrDefault()).ToList();
-            List<string> final_check_for_unique = new List<string>();
-            for (int i = list2.Count - 1; i >= 0; i--)
+            List<TSD.SectionMark> sectionMarkList = new List<TSD.SectionMark>();
+
+            for (int i = 0; i < SectionLocationList.Count; i++)
             {
-                if (i == 0)
+                if ((SectionLocationList[i].SectionViewNeeded == "YES"))
                 {
-                    list2[i].SectionViewNeeded = "YES";
-                }
-                else
-                {
-
-                    List<string> check_for_unique = new List<string>();
-                    for (int j = i - 1; j >= 0; j--)
-                    {
-
-
-                        var first_loop = list2[i].PartList;
-                        var second_loop = list2[j].PartList;
-
-                        if (!(first_loop.Count == second_loop.Count))
-                        {
-                            check_for_unique.Add("UNIQUE");
-
-                        }
-                        else
-                        {
-                            bool result = ComparePartMarkOrientation(first_loop, second_loop, main_part as TSM.Beam);
-
-                            if (result == true)
-                            {
-
-                                check_for_unique.Add("SAME");
-                            }
-                            else
-                            {
-                                check_for_unique.Add("UNIQUE");
-                            }
-
-                        }
-                    }
-
-                    if (!check_for_unique.Contains("SAME"))
-                    {
-                        list2[i].SectionViewNeeded = "YES";
-                    }
-                    else
-                    {
-                        list2[i].SectionViewNeeded = "NO";
-                        int check = check_for_unique.LastIndexOf("SAME");
-                        int check2 = check_for_unique.Count - (check + 1);
-                        list2[i].IndexOfSameSection = check2;
-                    }
-
-                }
-            }
-
-            list2 = list2.OrderBy(x => x.Distance).ToList();
-            List<SectionLocationWithParts> section = new List<SectionLocationWithParts>();
-            List<TSD.SectionMark> sectionmarklist = new List<TSD.SectionMark>();
-
-            for (int i = 0; i < list2.Count; i++)
-            {
-                if ((list2[i].SectionViewNeeded == "YES"))
-                {
-                    //if (list2[i].partlist.Count > 1)
-                    //{
-                    //    List<TSM.Beam> list_of_angles = new List<TSM.Beam>();
-
-
-                    //}
-                    double minx = 0;
-                    double maxx = 0;
-                    double mny = 0;
-                    double mxy = 0;
-
-                    minx = list2[i].PartList.Min(x => _boundingBoxHandler.BoundingBoxSort(x, current_view)[0].X);
-                    maxx = list2[i].PartList.Max(x => _boundingBoxHandler.BoundingBoxSort(x, current_view)[1].X);
-                    mny = list2[i].PartList.Min(x => _boundingBoxHandler.BoundingBoxSort(x, current_view)[0].Y);
-                    mxy = list2[i].PartList.Max(x => _boundingBoxHandler.BoundingBoxSort(x, current_view)[1].Y);
-
-                    double miny = Convert.ToInt64(mny);
-                    double maxy = Convert.ToInt64(mxy);
-
-                    double distanceofx = ((minx + maxx) / 2);
-                    double DISTANCE_TO_COMPARE = Math.Abs((minx - maxx));
-
-
-                    double distance_of_y = ((miny + maxy) / 2);
-
-                    double height_for_view = 0;
-                    double height_for_view1 = 0;
-
-                    double POSIH = Convert.ToInt64(height / 2);
-                    double NEGAH = -Convert.ToInt64(height / 2);
-
-
-
-                    if ((maxy <= POSIH) && (miny >= NEGAH))
-                    {
-                        height_for_view = -((height / 2));
-                        height_for_view1 = (height / 2);
-                    }
-                    else if ((maxy >= POSIH) && (miny >= POSIH))
-                    {
-                        height_for_view = (height / 2);
-                        height_for_view1 = maxy;
-
-                    }
-                    else if ((maxy <= NEGAH) && (miny <= NEGAH))
-                    {
-                        height_for_view = miny;
-                        height_for_view1 = (height / 2);
-
-                    }
-                    else if ((maxy >= POSIH) && (miny >= NEGAH))
-                    {
-                        height_for_view = -((height / 2));
-                        height_for_view1 = maxy;
-                    }
-
-                    else if ((maxy <= POSIH) && (miny <= NEGAH))
-                    {
-                        height_for_view = miny;
-                        height_for_view1 = (height / 2);
-                    }
-                    else if ((maxy >= POSIH) && (miny <= NEGAH))
-                    {
-                        height_for_view = miny;
-                        height_for_view1 = maxy;
-                    }
-
-
-
-
-                   
-                    TSD.SectionMark sec = null;
-                    double distancefor_depthup = 0;
-                    double distancefor_depthdown = 0;
-                    if (DISTANCE_TO_COMPARE < 300)
-                    {
-                        distancefor_depthup = Math.Abs(minx - distanceofx);
-                        distancefor_depthdown = Math.Abs(maxx - distanceofx);
-                    }
-                    else if (DISTANCE_TO_COMPARE > 300)
-                    {
-                        distancefor_depthup = 0;
-                        distancefor_depthdown = 0;
-
-                    }
-
-                    height_for_view = current_view.RestrictionBox.MaxPoint.Y;
-                    height_for_view1 = current_view.RestrictionBox.MinPoint.Y;
-                    TSG.Point P1 = new TSG.Point(distanceofx, height_for_view, 0);
-                    TSG.Point P2 = new TSG.Point(distanceofx, height_for_view1, 0);
-                    double dep_up = maxx - distanceofx;
-                    double dep_down = distanceofx - minx;
-                    if (dep_up > 100)
-                    {
-                        dep_up = 5;
-                    }
-                    else
-                    {
-                    }
-                    if (dep_down > 100)
-                    {
-                        dep_down = 5;
-                    }
-                    
+                    TSD.SectionMark secMark = null;
+                    TSD.View sectionView = null;
                     try
                     {
-                        TSD.View bottom_view = null;
-                        bool result = TSD.View.CreateSectionView(current_view, P2, P1, new TSG.Point(current_view.ExtremaCenter.X, 0, 0), Convert.ToInt64(dep_up) + 100, Convert.ToInt64(dep_down) + 100, new TSD.View.ViewAttributes("SK_BEAM_A1"), new TSD.SectionMarkBase.SectionMarkAttributes("SK_BEAM_A1"), out bottom_view, out sec);
-                        bottom_view.Attributes.LoadAttributes("SK_BEAM_A1");
-                        bottom_view.Modify();
+                        CreateSectionView(curentView, SectionLocationList[i], out secMark, out sectionView);
+                        ConfigureSectionView( secMark, sectionView, curentView);
 
-                        double change_min = Math.Abs(bottom_view.RestrictionBox.MinPoint.X);
-                        double change_max = Math.Abs(bottom_view.RestrictionBox.MaxPoint.X);
-                        if (Convert.ToInt64(change_min) > Convert.ToInt64(change_max))
+                        SectionLocationList[i].MyView = sectionView;
+                        sectionMarkList.Add(secMark);
+                        TSD.DrawingObjectEnumerator partEnums = sectionView.GetAllObjects(typeof(TSD.Part));
+                        List<int> partIdList = new List<int>();
+                        List<TSM.Part> sectionParts = new List<TSM.Part>();
+                        while (partEnums.MoveNext())
                         {
-                            bottom_view.RestrictionBox.MaxPoint.X = change_min;
-                            bottom_view.Modify();
+                            TSD.Part drgPart = partEnums.Current as TSD.Part;
+                            TSM.ModelObject modelObj = new TSM.Model().SelectModelObject(drgPart.ModelIdentifier);
+                            TSD.PointList bounding_box_z = _boundingBoxHandler.BoundingBoxSort(modelObj, sectionView, SKSortingHandler.SortBy.Z);
 
-                        }
-                        else
-                        {
-                            bottom_view.RestrictionBox.MinPoint.X = -change_max;
-                            bottom_view.Modify();
-
-                        }
-
-
-                        bottom_view.Attributes.LabelPositionHorizontal = TSD.View.HorizontalLabelPosition.CenteredByViewRestrictionBox;
-                        bottom_view.Modify();
-
-
-                        TSD.FontAttributes FONT = new TSD.FontAttributes();
-                        FONT.Color = TSD.DrawingColors.Magenta;
-                        FONT.Height = Convert.ToInt16(3.96875);
-                        TSD.PropertyElement.PropertyElementType VIEW_LABEL = TSD.PropertyElement.PropertyElementType.ViewLabelMarkPropertyElementTypes.ViewName();
-                        TSD.PropertyElement X = new TSD.PropertyElement(VIEW_LABEL);
-                        X.Font.Color = TSD.DrawingColors.Magenta;
-                        X.Font.Height = Convert.ToInt64(3.96875);
-
-                        //TSD.TextElement textelement2 = new TSD.TextElement(sec.Attributes.MarkName, FONT);
-                        TSD.TextElement textelement3 = new TSD.TextElement("-", FONT);
-                        //TSD.ContainerElement sectionmark = new TSD.ContainerElement { textelement2, textelement3, textelement2 };
-
-                        TSD.ContainerElement sectionmark = new TSD.ContainerElement { X, textelement3, X };
-
-
-                        //sec.Attributes.TagsAttributes
-
-
-
-                        sec.Attributes.LineColor = TSD.DrawingColors.Magenta;
-                        sec.Attributes.TagsAttributes.TagA1 = new TSD.SectionMarkBase.SectionMarkTagAttributes(TSD.SectionMarkBase.SectionMarkTagAttributes.TagShowOnSide.ShowOnBothSides, TSD.TagLocation.AboveLine, new TSG.Vector(1, 0, 0), TSD.SectionMarkBase.SectionMarkTagAttributes.TagTextRotation.AlwaysHorizontal, new TSD.ContainerElement { X });
-
-                        bottom_view.Attributes.TagsAttributes.TagA1 = new TSD.View.ViewMarkTagAttributes(new TSG.Vector(0, 0, 0), TSD.TagLocation.AboveLine, TSD.TextAlignment.Center, sectionmark);
-
-                        bottom_view.Attributes.LabelPositionVertical = TSD.View.VerticalLabelPosition.Bottom;
-
-                        bottom_view.Attributes.MarkSymbolColor = TSD.DrawingColors.Magenta;
-                        sec.Attributes.SymbolColor = TSD.DrawingColors.Magenta;
-                        sec.Attributes.LineColor = TSD.DrawingColors.Magenta;
-                        bottom_view.Attributes.Scale.Equals(current_view.Attributes.Scale);
-
-                        bottom_view.Modify();
-                        //  sec.Modify();
-                        list2[i].MyView = bottom_view;
-                        sectionmarklist.Add(sec);
-                        TSD.DrawingObjectEnumerator BOTTOM = bottom_view.GetAllObjects(typeof(TSD.Part));
-                        List<int> list_req = new List<int>();
-                        List<TSM.Part> mypart_list_for_section = new List<TSM.Part>();
-                        while (BOTTOM.MoveNext())
-                        {
-                            TSD.Part MYDRG_PART = BOTTOM.Current as TSD.Part;
-                            TSM.ModelObject MMODEL = new TSM.Model().SelectModelObject(MYDRG_PART.ModelIdentifier);
-                            TSD.PointList bounding_box_z = _boundingBoxHandler.BoundingBoxSort(MMODEL, bottom_view, SKSortingHandler.SortBy.Z);
-
-                            if ((Convert.ToInt64(bounding_box_z[1].Z) >= Convert.ToInt64(bottom_view.RestrictionBox.MinPoint.Z)) && (Convert.ToInt64(bounding_box_z[0].Z) <= Convert.ToInt64(bottom_view.RestrictionBox.MaxPoint.Z)))
+                            if ((Convert.ToInt64(bounding_box_z[1].Z) >= Convert.ToInt64(sectionView.RestrictionBox.MinPoint.Z)) && (Convert.ToInt64(bounding_box_z[0].Z) <= Convert.ToInt64(sectionView.RestrictionBox.MaxPoint.Z)))
                             {
-                                TSM.Part mmpart = MMODEL as TSM.Part;
-                                if (!mmpart.Identifier.ID.Equals(main_part.Identifier.ID))
+                                TSM.Part mPart = modelObj as TSM.Part;
+                                if (!mPart.Identifier.ID.Equals(mainPart.Identifier.ID))
                                 {
-                                    list_req.Add(mmpart.Identifier.ID);
-                                    mypart_list_for_section.Add(mmpart);
+                                    partIdList.Add(mPart.Identifier.ID);
+                                    sectionParts.Add(mPart);
                                 }
 
                             }
 
 
                         }
-                        list2[i].RequiredPartList = mypart_list_for_section;
-                        MYLIST.Add(list_req);
+                        SectionLocationList[i].RequiredPartList = sectionParts;
+                        sectionPartIds.Add(partIdList);
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Console.WriteLine($"Error creating section view: {ex.Message}");
                     }
 
                 }
@@ -574,21 +398,8 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                 else
                 {
 
-                    TSD.SectionMark sec_dummy = null;
-                    sectionmarklist.Add(sec_dummy);
-                    TSD.SectionMark mysec = sectionmarklist[list2[i].IndexOfSameSection];
+                    InsertDummySectionMark(sectionMarkList, SectionLocationList[i]);
 
-                    mysec.LeftPoint.X = list2[i].Distance;
-                    mysec.RightPoint.X = list2[i].Distance;
-                    mysec.Attributes.LineColor = TSD.DrawingColors.Magenta;
-                    mysec.Attributes.SymbolColor = TSD.DrawingColors.Magenta;
-
-
-
-
-
-
-                    mysec.Insert();
 
                 }
 
@@ -596,6 +407,112 @@ namespace SK.Tekla.Drawing.Automation.Handlers
 
 
 
+
+            }
+            return sectionPartIds;
+        }
+
+
+        /// <summary>
+        /// Prepare the drawing marks for the section view
+        /// </summary>
+        /// <param name="secMark"></param>
+        /// <param name="sectionView"></param>
+        /// <param name="currentView"></param>
+        private void ConfigureSectionView(SectionMark secMark, TSD.View sectionView, TSD.View currentView)
+        {
+            TSD.FontAttributes FONT = new TSD.FontAttributes();
+            FONT.Color = TSD.DrawingColors.Magenta;
+            FONT.Height = Convert.ToInt16(3.96875);
+            TSD.PropertyElement.PropertyElementType VIEW_LABEL = TSD.PropertyElement.PropertyElementType.ViewLabelMarkPropertyElementTypes.ViewName();
+            TSD.PropertyElement X = new TSD.PropertyElement(VIEW_LABEL);
+            X.Font.Color = TSD.DrawingColors.Magenta;
+            X.Font.Height = Convert.ToInt64(3.96875);
+
+            TSD.TextElement textelement3 = new TSD.TextElement("-", FONT);
+
+
+            TSD.ContainerElement sectionmark = new TSD.ContainerElement { X, textelement3, X };
+
+            secMark.Attributes.LineColor = TSD.DrawingColors.Magenta;
+            secMark.Attributes.TagsAttributes.TagA1 = new TSD.SectionMarkBase.SectionMarkTagAttributes(TSD.SectionMarkBase.SectionMarkTagAttributes.TagShowOnSide.ShowOnBothSides, TSD.TagLocation.AboveLine, new TSG.Vector(1, 0, 0), TSD.SectionMarkBase.SectionMarkTagAttributes.TagTextRotation.AlwaysHorizontal, new TSD.ContainerElement { X });
+
+            sectionView.Attributes.TagsAttributes.TagA1 = new TSD.View.ViewMarkTagAttributes(new TSG.Vector(0, 0, 0), TSD.TagLocation.AboveLine, TSD.TextAlignment.Center, sectionmark);
+
+            sectionView.Attributes.LabelPositionVertical = TSD.View.VerticalLabelPosition.Bottom;
+
+            sectionView.Attributes.MarkSymbolColor = TSD.DrawingColors.Magenta;
+            secMark.Attributes.SymbolColor = TSD.DrawingColors.Magenta;
+            secMark.Attributes.LineColor = TSD.DrawingColors.Magenta;
+            sectionView.Attributes.Scale.Equals(currentView.Attributes.Scale);
+
+            sectionView.Modify();
+        }
+
+        private void MarkUniqueSections(List<SectionLocationWithParts> sections, TSM.Part mainPart)
+        {
+            for (int i = sections.Count - 1; i >= 0; i--)
+            {
+                if (i == 0)
+                {
+                    sections[i].SectionViewNeeded = "YES";
+                    continue;
+                }
+                bool isUnique = true;
+                for (int j = i - 1; j >= 0; j--)
+                {
+                    if (sections[i].PartList.Count == sections[j].PartList.Count &&
+                        ComparePartMarkOrientation(sections[i].PartList, sections[j].PartList, mainPart as TSM.Beam))
+                    {
+                        isUnique = false;
+                        sections[i].SectionViewNeeded = "NO";
+                        sections[i].IndexOfSameSection = i - j - 1;
+                        break;
+                    }
+                }
+                if (isUnique) sections[i].SectionViewNeeded = "YES";
+
+                //List<string> check_for_unique = new List<string>();
+                //for (int j = i - 1; j >= 0; j--)
+                //{
+
+
+                //    var first_loop = sections[i].PartList;
+                //    var second_loop = sections[j].PartList;
+
+                //    if (!(first_loop.Count == second_loop.Count))
+                //    {
+                //        check_for_unique.Add("UNIQUE");
+
+                //    }
+                //    else
+                //    {
+                //        bool result = ComparePartMarkOrientation(first_loop, second_loop, mainPart as TSM.Beam);
+
+                //        if (result == true)
+                //        {
+
+                //            check_for_unique.Add("SAME");
+                //        }
+                //        else
+                //        {
+                //            check_for_unique.Add("UNIQUE");
+                //        }
+
+                //    }
+                //}
+
+                //if (!check_for_unique.Contains("SAME"))
+                //{
+                //    sections[i].SectionViewNeeded = "YES";
+                //}
+                //else
+                //{
+                //    sections[i].SectionViewNeeded = "NO";
+                //    int check = check_for_unique.LastIndexOf("SAME");
+                //    int check2 = check_for_unique.Count - (check + 1);
+                //    sections[i].IndexOfSameSection = check2;
+                //}
 
             }
         }
@@ -873,378 +790,207 @@ namespace SK.Tekla.Drawing.Automation.Handlers
                 (Convert.ToInt64(vector1.Z) == Convert.ToInt64(vector2.Z));
         }
 
-        private void CompareSectionViews(List<RequiredPartPoints> mypoints, TSD.View current_view, TSM.Part main_part,
-            List<List<int>> mypart_list_of_created_sect_view, TSD.AssemblyDrawing ASSEMBLY_DRAWING,
-             string drg_att)
+
+        /// <summary>
+        /// Compare flange section views (SEC_VIEW_COMPARE)
+        /// </summary>
+        /// <param name="partsOutsideHeight"></param>
+        /// <param name="currentView"></param>
+        /// <param name="mainPart"></param>
+        /// <param name="assemblyDrawing"></param>
+        /// <param name="drgAttribute"></param>
+        private void CompareFlangeSectionViews(List<RequiredPartPoints> partsOutsideHeight, TSD.View currentView, TSM.Part mainPart,
+            TSD.AssemblyDrawing assemblyDrawing,
+             string drgAttribute)
         {
-            List<double> mainpart_values = _catalogHandler.Getcatalog_values(main_part);
+            //List<double> mainpart_values = _catalogHandler.Getcatalog_values(main_part);
+            double height = GetPartHeight(mainPart);
+            FlangeSectionLocationList = new List<SectionLocationWithParts>();
+            partsOutsideHeight = partsOutsideHeight.OrderBy(x => x.distanceX).ToList();
 
-            list_for_flange_section = new List<SectionLocationWithParts>();
-            mypoints = mypoints.OrderBy(x => x.distanceX).ToList();
+            List<TSM.Part> currentParts = new List<TSM.Part>();
 
-
-
-            List<RequiredPartPoints> final_distance = new List<RequiredPartPoints>();
-
-            for (int i = 0; i < mypoints.Count; i++)
+            for (int i = 0; i < partsOutsideHeight.Count; i++)
             {
-
-                if (i == Convert.ToInt16(mypoints.Count - 1))
+                currentParts.Add(partsOutsideHeight[i].part);
+                if (i == partsOutsideHeight.Count - 1 || (partsOutsideHeight[i + 1].distanceX - partsOutsideHeight[i].distanceX) > MinDistanceForFlangeSection)
                 {
-                    final_distance.Add(mypoints[i]);
-
-                }
-                else
-                {
-                    double ditsnace = (Convert.ToInt16(mypoints[i + 1].distanceX) - Convert.ToInt16(mypoints[i].distanceX));
-                    if (ditsnace > 25)
+                    FlangeSectionLocationList.Add(new SectionLocationWithParts
                     {
-                        final_distance.Add(mypoints[i]);
-
-                    }
-
-                    else
-                    {
-                        if (mypoints[i].distanceX != mypoints[i + 1].distanceX)
-                        {
-                            if (mypoints[i].distanceY > mypoints[i + 1].distanceY)
-                            {
-                                final_distance.Add(mypoints[i]);
-                            }
-                            else
-                            {
-                                final_distance.Add(mypoints[i + 1]);
-                                //final_distance.Add(mypoints[i ]);
-                            }
-                        }
-                    }
-                }
-            }
-            TSM.Part main = main_part;
-
-            List<double> final_distance_UNIQUE = new List<double>();
-
-
-            SectionLocationWithParts obj1 = new SectionLocationWithParts();
-            List<TSM.Part> list1 = new List<TSM.Part>();
-
-            for (int i = 0; i < mypoints.Count; i++)
-            {
-
-                if (i == Convert.ToInt16(mypoints.Count - 1))
-                {
-                    final_distance_UNIQUE.Add(mypoints[i].distanceX);
-                    list1.Add(mypoints[i].part);
-                    list_for_flange_section.Add(new SectionLocationWithParts() { PartList = list1, Distance = mypoints[i].distanceX });
-
-                }
-                else
-                {
-                    double ditsnace = (Convert.ToInt16(mypoints[i + 1].distanceX) - Convert.ToInt16(mypoints[i].distanceX));
-                    if (ditsnace > 25)
-                    {
-
-                        list1.Add(mypoints[i].part);
-                        list_for_flange_section.Add(new SectionLocationWithParts() { PartList = list1, Distance = mypoints[i].distanceX });
-                        list1 = new List<TSM.Part>();
-                    }
-
-                    else
-                    {
-                        list1.Add(mypoints[i].part);
-
-                    }
-                }
-            }
-
-            List<TSM.Part> final_list = new List<TSM.Part>();
-            List<SectionLocationWithParts> f1 = new List<SectionLocationWithParts>();
-            List<SectionLocationWithParts> f2 = new List<SectionLocationWithParts>();
-
-
-            List<SectionLocationWithParts> FINAL = list_for_flange_section.GroupBy(X => X.PartList.Count).Select(Y => Y.FirstOrDefault()).ToList();
-            List<string> final_check_for_unique = new List<string>();
-            for (int i = list_for_flange_section.Count - 1; i >= 0; i--)
-            {
-                if (i == 0)
-                {
-                    list_for_flange_section[i].SectionViewNeeded = "YES";
-                }
-                else
-                {
-
-                    List<string> check_for_unique = new List<string>();
-                    for (int j = i - 1; j >= 0; j--)
-                    {
-
-
-                        var first_loop = list_for_flange_section[i].PartList;
-                        var second_loop = list_for_flange_section[j].PartList;
-
-                        if (!(first_loop.Count == second_loop.Count))
-                        {
-                            check_for_unique.Add("UNIQUE");
-
-                        }
-                        else
-                        {
-                            bool result = ComparePartMarkOrientation(first_loop, second_loop, main_part as TSM.Beam);
-
-                            if (result == true)
-                            {
-
-                                check_for_unique.Add("SAME");
-                            }
-                            else
-                            {
-                                check_for_unique.Add("UNIQUE");
-                            }
-
-                        }
-                    }
-
-                    if (!check_for_unique.Contains("SAME"))
-                    {
-                        list_for_flange_section[i].SectionViewNeeded = "YES";
-                    }
-                    else
-                    {
-                        list_for_flange_section[i].SectionViewNeeded = "NO";
-                        int check = check_for_unique.LastIndexOf("SAME");
-                        int check2 = check_for_unique.Count - (check + 1);
-                        list_for_flange_section[i].IndexOfSameSection = check2;
-                    }
-
+                        PartList = new List<TSM.Part>(currentParts),
+                        Distance = partsOutsideHeight[i].distanceX
+                    });
+                    currentParts.Clear();
                 }
             }
 
 
+            MarkUniqueSections(FlangeSectionLocationList, mainPart);
 
 
+            FlangeSectionLocationList = FlangeSectionLocationList.OrderBy(x => x.Distance).ToList();
+           
+            List<TSD.SectionMark> sectionMarkList = new List<TSD.SectionMark>();
 
-            list_for_flange_section = list_for_flange_section.OrderBy(x => x.Distance).ToList();
-            List<SectionLocationWithParts> section = new List<SectionLocationWithParts>();
-            List<TSD.SectionMark> sectionmarklist = new List<TSD.SectionMark>();
-
-
-
-
-
-
-
-
-            for (int i = 0; i < list_for_flange_section.Count; i++)
+            for (int i = 0; i < FlangeSectionLocationList.Count; i++)
             {
-                if ((list_for_flange_section[i].SectionViewNeeded == "YES"))
+                if ((FlangeSectionLocationList[i].SectionViewNeeded == "YES"))
                 {
-                    //if (list2[i].partlist.Count > 1)
-                    //{
-                    //    List<TSM.Beam> list_of_angles = new List<TSM.Beam>();
+                    TSD.View sectionView = null;
+                    TSD.SectionMark sectionMark = null;
 
-
-                    //}
-                    double minx = 0;
-                    double maxx = 0;
-                    double mny = 0;
-                    double mxy = 0;
-
-                    minx = list_for_flange_section[i].PartList.Min(x => _boundingBoxHandler.BoundingBoxSort(x, current_view)[0].X);
-                    maxx = list_for_flange_section[i].PartList.Max(x => _boundingBoxHandler.BoundingBoxSort(x, current_view)[1].X);
-                    mny = list_for_flange_section[i].PartList.Min(x => _boundingBoxHandler.BoundingBoxSort(x, current_view)[0].Y);
-                    mxy = list_for_flange_section[i].PartList.Max(x => _boundingBoxHandler.BoundingBoxSort(x, current_view)[1].Y);
-
-                    double miny = Convert.ToInt64(mny);
-                    double maxy = Convert.ToInt64(mxy);
-
-                    double distanceofx = ((minx + maxx) / 2);
-                    double DISTANCE_TO_COMPARE = Math.Abs((minx - maxx));
-
-
-                    double distance_of_y = ((miny + maxy) / 2);
-                    double height = Convert.ToDouble(mainpart_values[0]);
-                    double height_for_view = 0;
-                    double height_for_view1 = 0;
-
-                    double POSIH = Convert.ToInt64(height / 2);
-                    double NEGAH = -Convert.ToInt64(height / 2);
-
-
-
-                    if ((maxy <= POSIH) && (miny >= NEGAH))
-                    {
-                        height_for_view = -((height / 2));
-                        height_for_view1 = (height / 2);
-                    }
-                    else if ((maxy >= POSIH) && (miny >= POSIH))
-                    {
-                        height_for_view = (height / 2);
-                        height_for_view1 = maxy;
-
-                    }
-                    else if ((maxy <= NEGAH) && (miny <= NEGAH))
-                    {
-                        height_for_view = miny;
-                        height_for_view1 = (height / 2);
-
-                    }
-                    else if ((maxy >= POSIH) && (miny >= NEGAH))
-                    {
-                        height_for_view = -((height / 2));
-                        height_for_view1 = maxy;
-                    }
-
-                    else if ((maxy <= POSIH) && (miny <= NEGAH))
-                    {
-                        height_for_view = miny;
-                        height_for_view1 = (height / 2);
-                    }
-                    else if ((maxy >= POSIH) && (miny <= NEGAH))
-                    {
-                        height_for_view = miny;
-                        height_for_view1 = maxy;
-                    }
-
-
-
-
-                    TSD.View bottom_view = null;
-
-
-                    TSD.SectionMark sec = null;
-
-                    double distancefor_depthup = 0;
-                    double distancefor_depthdown = 0;
-                    if (DISTANCE_TO_COMPARE < 300)
-                    {
-                        distancefor_depthup = Math.Abs(minx - distanceofx);
-                        distancefor_depthdown = Math.Abs(maxx - distanceofx);
-                    }
-                    else if (DISTANCE_TO_COMPARE > 300)
-                    {
-                        distancefor_depthup = 0;
-                        distancefor_depthdown = 0;
-
-                    }
-
-                    height_for_view = current_view.RestrictionBox.MaxPoint.Y;
-                    height_for_view1 = current_view.RestrictionBox.MinPoint.Y;
-                    TSG.Point P1 = new TSG.Point(distanceofx, height_for_view, 0);
-                    TSG.Point P2 = new TSG.Point(distanceofx, height_for_view1, 0);
-
-
-                    double dep_up = maxx - distanceofx;
-                    double dep_down = distanceofx - minx;
                     try
                     {
-
-                        if (drg_att == "SK_BEAM_A1")
-                        {
-                            bool result = TSD.View.CreateSectionView(current_view, P2, P1, new TSG.Point(current_view.ExtremaCenter.X, 0, 0), Convert.ToInt64(dep_down) + 100, Convert.ToInt64(dep_up) + 100, current_view.Attributes, new TSD.SectionMarkBase.SectionMarkAttributes("SK_BEAM_A1"), out bottom_view, out sec);
-                            bottom_view.Attributes.LoadAttributes("SK_BEAM_A1");
-                            bottom_view.Modify();
+                        CreateFlangeSectionView(currentView, FlangeSectionLocationList[i], out sectionView, out sectionMark);
 
 
-                        }
-                        else
-                        {
-                            bool result = TSD.View.CreateSectionView(current_view, P2, P1, new TSG.Point(current_view.ExtremaCenter.X, 0, 0), Convert.ToInt64(dep_down) + 100, Convert.ToInt64(dep_up) + 100, current_view.Attributes, new TSD.SectionMarkBase.SectionMarkAttributes("SK_BEAM_A1"), out bottom_view, out sec);
-                            bottom_view.Attributes.LoadAttributes("SK_BEAM_A1");
-                            bottom_view.Modify();
-                        }
+                        ConfigureFlangeSectionView(sectionView, sectionMark, currentView);
 
-                        sec.Attributes.LineLengthOffset = 0;
-                        sec.Modify();
-
-                        double change_min = Math.Abs(bottom_view.RestrictionBox.MinPoint.X);
-                        double change_max = Math.Abs(bottom_view.RestrictionBox.MaxPoint.X);
-
-
-                        if (Convert.ToInt64(change_min) > Convert.ToInt64(change_max))
-                        {
-                            bottom_view.RestrictionBox.MaxPoint.X = change_min;
-                            bottom_view.Modify();
-
-                        }
-                        else
-                        {
-                            bottom_view.RestrictionBox.MinPoint.X = -change_max;
-                            bottom_view.Modify();
-
-                        }
-
-
-                        bottom_view.Attributes.LabelPositionHorizontal = TSD.View.HorizontalLabelPosition.CenteredByViewRestrictionBox;
-                        bottom_view.Modify();
-
-
-                        TSD.FontAttributes FONT = new TSD.FontAttributes();
-                        FONT.Color = TSD.DrawingColors.Magenta;
-                        FONT.Height = Convert.ToInt16(3.96875);
-                        //bottom_view.Attributes.LabelPositionHorizontal = TSD.View.HorizontalLabelPosition.CenteredByViewFrame;
-                        //bottom_view.Modify();
-
-
-                        //TSD.TextElement textelement2 = new TSD.TextElement(sec.Attributes.MarkName, FONT);
-                        TSD.TextElement textelement3 = new TSD.TextElement("-", FONT);
-
-                        TSD.PropertyElement.PropertyElementType VIEW_LABEL = TSD.PropertyElement.PropertyElementType.ViewLabelMarkPropertyElementTypes.ViewName();
-                        TSD.PropertyElement X = new TSD.PropertyElement(VIEW_LABEL);
-                        X.Font.Color = TSD.DrawingColors.Magenta;
-                        X.Font.Height = Convert.ToInt64(3.96875);
-
-
-                        //TSD.ContainerElement sectionmark = new TSD.ContainerElement { textelement2, textelement3, textelement2 };
-
-                        TSD.ContainerElement sectionmark = new TSD.ContainerElement { X, textelement3, X };
-
-
-
-                        sec.Attributes.LineColor = TSD.DrawingColors.Magenta;
-                        sec.Attributes.TagsAttributes.TagA1 = new TSD.SectionMarkBase.SectionMarkTagAttributes(TSD.SectionMarkBase.SectionMarkTagAttributes.TagShowOnSide.ShowOnBothSides, TSD.TagLocation.AboveLine, new TSG.Vector(1, 0, 0), TSD.SectionMarkBase.SectionMarkTagAttributes.TagTextRotation.AlwaysHorizontal, new TSD.ContainerElement { X });
-
-                        bottom_view.Attributes.TagsAttributes.TagA1 = new TSD.View.ViewMarkTagAttributes(new TSG.Vector(0, 0, 0), TSD.TagLocation.AboveLine, TSD.TextAlignment.Center, sectionmark);
-
-                        bottom_view.Attributes.LabelPositionVertical = TSD.View.VerticalLabelPosition.Bottom;
-
-                        bottom_view.Attributes.MarkSymbolColor = TSD.DrawingColors.Magenta;
-                        sec.Attributes.SymbolColor = TSD.DrawingColors.Magenta;
-                        sec.Attributes.LineColor = TSD.DrawingColors.Magenta;
-                        bottom_view.Attributes.Scale.Equals(current_view.Attributes.Scale);
-
-                        bottom_view.Modify();
-
-
-                        list_for_flange_section[i].MyView = bottom_view;
-                        sectionmarklist.Add(sec);
+                        FlangeSectionLocationList[i].MyView = sectionView;
+                        sectionMarkList.Add(sectionMark);
 
 
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Console.WriteLine($"Error creating section view: {ex.Message}");
                     }
 
                 }
 
                 else
                 {
-
-                    TSD.SectionMark sec_dummy = null;
-                    sectionmarklist.Add(sec_dummy);
-                    TSD.SectionMark mysec = sectionmarklist[list_for_flange_section[i].IndexOfSameSection];
-
-                    mysec.LeftPoint.X = list_for_flange_section[i].Distance;
-                    mysec.RightPoint.X = list_for_flange_section[i].Distance;
-                    mysec.Insert();
+                    InsertDummySectionMark(sectionMarkList, FlangeSectionLocationList[i]);
 
                 }
 
+            }
+
+        }
+
+        private void CreateSectionView(TSD.View current_view, SectionLocationWithParts sectionLocation, out SectionMark secMark, out TSD.View sectionView)
+        {
+            double minx = sectionLocation.PartList.Min(x => _boundingBoxHandler.BoundingBoxSort(x, current_view)[0].X);
+            double maxx = sectionLocation.PartList.Max(x => _boundingBoxHandler.BoundingBoxSort(x, current_view)[1].X);
+
+            double miny = Convert.ToInt64(sectionLocation.PartList.Min(x => _boundingBoxHandler.BoundingBoxSort(x, current_view)[0].Y));
+            double maxy = Convert.ToInt64(sectionLocation.PartList.Max(x => _boundingBoxHandler.BoundingBoxSort(x, current_view)[1].Y));
+
+            double distanceofx = ((minx + maxx) / 2);
+            double distance_of_y = ((miny + maxy) / 2);
+
+            double height_for_view = current_view.RestrictionBox.MaxPoint.Y;
+            double height_for_view1 = current_view.RestrictionBox.MinPoint.Y;
+            TSG.Point P1 = new TSG.Point(distanceofx, height_for_view, 0);
+            TSG.Point P2 = new TSG.Point(distanceofx, height_for_view1, 0);
+            double dep_up = maxx - distanceofx;
+            double dep_down = distanceofx - minx;
+            if (dep_up > 100)
+            {
+                dep_up = 5;
+            }
+            if (dep_down > 100)
+            {
+                dep_down = 5;
+            }
 
 
+            bool result = TSD.View.CreateSectionView(current_view, P2, P1, new TSG.Point(current_view.ExtremaCenter.X, 0, 0),
+                Convert.ToInt64(dep_up) + 100, Convert.ToInt64(dep_down) + 100,
+                new TSD.View.ViewAttributes("SK_BEAM_A1"), new TSD.SectionMarkBase.SectionMarkAttributes("SK_BEAM_A1"), out sectionView, out secMark);
+            sectionView.Attributes.LoadAttributes("SK_BEAM_A1");
+            sectionView.Modify();
 
+            double change_min = Math.Abs(sectionView.RestrictionBox.MinPoint.X);
+            double change_max = Math.Abs(sectionView.RestrictionBox.MaxPoint.X);
+            if (Convert.ToInt64(change_min) > Convert.ToInt64(change_max))
+            {
+                sectionView.RestrictionBox.MaxPoint.X = change_min;
+                sectionView.Modify();
 
+            }
+            else
+            {
+                sectionView.RestrictionBox.MinPoint.X = -change_max;
+                sectionView.Modify();
 
             }
 
+
+            sectionView.Attributes.LabelPositionHorizontal = TSD.View.HorizontalLabelPosition.CenteredByViewRestrictionBox;
+            sectionView.Modify();
+        }
+
+
+        private void CreateFlangeSectionView(TSD.View currentView, SectionLocationWithParts sectionLocation, out TSD.View sectionView, out SectionMark sectionMark)
+        {
+            double minx = sectionLocation.PartList.Min(x => _boundingBoxHandler.BoundingBoxSort(x, currentView)[0].X);
+            double maxx = sectionLocation.PartList.Max(x => _boundingBoxHandler.BoundingBoxSort(x, currentView)[1].X);
+            double miny = Convert.ToInt64(sectionLocation.PartList.Min(x => _boundingBoxHandler.BoundingBoxSort(x, currentView)[0].Y));
+            double maxy = Convert.ToInt64(sectionLocation.PartList.Max(x => _boundingBoxHandler.BoundingBoxSort(x, currentView)[1].Y));
+
+            double distanceofx = ((minx + maxx) / 2);
+            double DISTANCE_TO_COMPARE = Math.Abs((minx - maxx));
+
+
+            double distance_of_y = ((miny + maxy) / 2);
+
+
+
+
+            double height_for_view = currentView.RestrictionBox.MaxPoint.Y;
+            double height_for_view1 = currentView.RestrictionBox.MinPoint.Y;
+            TSG.Point P1 = new TSG.Point(distanceofx, height_for_view, 0);
+            TSG.Point P2 = new TSG.Point(distanceofx, height_for_view1, 0);
+
+
+            double dep_up = maxx - distanceofx;
+            double dep_down = distanceofx - minx;
+
+            bool result = TSD.View.CreateSectionView(currentView, P2, P1, new TSG.Point(currentView.ExtremaCenter.X, 0, 0),
+                Convert.ToInt64(dep_down) + 100, Convert.ToInt64(dep_up) + 100,
+                currentView.Attributes, new TSD.SectionMarkBase.SectionMarkAttributes("SK_BEAM_A1"),
+                out sectionView, out sectionMark);
+            sectionView.Attributes.LoadAttributes("SK_BEAM_A1");
+            sectionView.Modify();
+
+            sectionMark.Attributes.LineLengthOffset = 0;
+            sectionMark.Modify();
+
+            double change_min = Math.Abs(sectionView.RestrictionBox.MinPoint.X);
+            double change_max = Math.Abs(sectionView.RestrictionBox.MaxPoint.X);
+
+
+            if (Convert.ToInt64(change_min) > Convert.ToInt64(change_max))
+            {
+                sectionView.RestrictionBox.MaxPoint.X = change_min;
+                sectionView.Modify();
+
+            }
+            else
+            {
+                sectionView.RestrictionBox.MinPoint.X = -change_max;
+                sectionView.Modify();
+
+            }
+
+
+            sectionView.Attributes.LabelPositionHorizontal = TSD.View.HorizontalLabelPosition.CenteredByViewRestrictionBox;
+            sectionView.Modify();
+        }
+
+        private void InsertDummySectionMark(List<SectionMark> sectionMarkList, SectionLocationWithParts sectionLocation)
+        {
+            TSD.SectionMark sec_dummy = null;
+            sectionMarkList.Add(sec_dummy);
+            TSD.SectionMark secMark = sectionMarkList[sectionLocation.IndexOfSameSection];
+
+            secMark.LeftPoint.X = sectionLocation.Distance;
+            secMark.RightPoint.X = sectionLocation.Distance;
+            secMark.Attributes.LineColor = TSD.DrawingColors.Magenta;
+            secMark.Attributes.SymbolColor = TSD.DrawingColors.Magenta;
+
+            secMark.Insert();
         }
 
         /// <summary>
@@ -1254,7 +1000,7 @@ namespace SK.Tekla.Drawing.Automation.Handlers
         /// <param name="mainPart"></param>
         /// <param name="currentView"></param>
         /// <returns></returns>
-        private TSD.PointList ConvertToViewPoints(TSD.PointList modelPoints,TSM.Beam mainPart, TSD.View currentView)
+        private TSD.PointList ConvertToViewPoints(TSD.PointList modelPoints, TSM.Beam mainPart, TSD.View currentView)
         {
             TSD.PointList pmList = new TSD.PointList();
 
@@ -1276,19 +1022,39 @@ namespace SK.Tekla.Drawing.Automation.Handlers
             }
 
             return vpList;
-            ////global to view's coordinate system
-            //TSG.Matrix viewMatrix = TSG.MatrixFactory.ToCoordinateSystem(currentView.DisplayCoordinateSystem);
-
-
-            //TSD.PointList viewPoints = new TSD.PointList();
-            //foreach (TSG.Point pt in modelPoints)
-            //{
-            //    viewPoints.Add(viewMatrix.Transform(pt));
-            //}
-
-            //return viewPoints;
         }
 
+        private void ConfigureFlangeSectionView(TSD.View sectionView, TSD.SectionMark sectionMark, TSD.View currentView)
+        {
+            TSD.FontAttributes FONT = new TSD.FontAttributes();
+            FONT.Color = TSD.DrawingColors.Magenta;
+            FONT.Height = Convert.ToInt16(3.96875);
+
+            TSD.TextElement textelement3 = new TSD.TextElement("-", FONT);
+
+            TSD.PropertyElement.PropertyElementType VIEW_LABEL = TSD.PropertyElement.PropertyElementType.ViewLabelMarkPropertyElementTypes.ViewName();
+            TSD.PropertyElement X = new TSD.PropertyElement(VIEW_LABEL);
+            X.Font.Color = TSD.DrawingColors.Magenta;
+            X.Font.Height = Convert.ToInt64(3.96875);
+
+            TSD.ContainerElement sectionmark = new TSD.ContainerElement { X, textelement3, X };
+
+
+
+            sectionMark.Attributes.LineColor = TSD.DrawingColors.Magenta;
+            sectionMark.Attributes.TagsAttributes.TagA1 = new TSD.SectionMarkBase.SectionMarkTagAttributes(TSD.SectionMarkBase.SectionMarkTagAttributes.TagShowOnSide.ShowOnBothSides, TSD.TagLocation.AboveLine, new TSG.Vector(1, 0, 0), TSD.SectionMarkBase.SectionMarkTagAttributes.TagTextRotation.AlwaysHorizontal, new TSD.ContainerElement { X });
+
+            sectionView.Attributes.TagsAttributes.TagA1 = new TSD.View.ViewMarkTagAttributes(new TSG.Vector(0, 0, 0), TSD.TagLocation.AboveLine, TSD.TextAlignment.Center, sectionmark);
+
+            sectionView.Attributes.LabelPositionVertical = TSD.View.VerticalLabelPosition.Bottom;
+
+            sectionView.Attributes.MarkSymbolColor = TSD.DrawingColors.Magenta;
+            sectionMark.Attributes.SymbolColor = TSD.DrawingColors.Magenta;
+            sectionMark.Attributes.LineColor = TSD.DrawingColors.Magenta;
+            sectionView.Attributes.Scale.Equals(currentView.Attributes.Scale);
+
+            sectionView.Modify();
+        }
 
         #endregion
 
